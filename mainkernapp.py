@@ -5,6 +5,7 @@ import sys
 import numpy as np
 import numpy
 import matplotlib.pyplot as plt
+import pylab
 import mlpy
 from functools import partial
 
@@ -36,6 +37,10 @@ def draw_data(data, clabs, kernel_func):
 #    Kx = np.mat(mlpy.kernel_center(Kx, Kx))
     Kx = np.mat(mlpy.kernel_gaussian(data, data, sigma=2))
     vals, vecs = np.linalg.eig(Kx)
+
+    pylab.plot(vals)
+    pylab.show()
+
     f = open('vecs', 'w')
     f.write(str(np.real(vecs)))
     f.close()
@@ -75,6 +80,9 @@ def draw_mlpy_example(data, clabs):
     f = open('mlpy_vals', 'w')
     f.write(str(gaussian_pca.evals()))
     f.close()
+
+    pylab.plot(gaussian_pca.evals())
+    pylab.show()
 
     fig = plt.figure(1)
     ax1 = plt.subplot(121)
