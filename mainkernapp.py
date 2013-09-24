@@ -6,6 +6,7 @@ import numpy as np
 import numpy
 import matplotlib.pyplot as plt
 import mlpy
+from functools import partial
 
 def line(stDot, finDot, res=100):
     assert len(stDot) == len(finDot)
@@ -24,54 +25,65 @@ def polynomial_closure(ext):
     return polynomial
 
 
-def draw_data(data, kernel_func):
+def draw_data(data, clabs, kernel_func):
     fig = plt.figure(1) # plot
 
-    plot1 = plt.plot(data[:, 0], data[:, 1], 'o', label='Original Data')
+    print data.shape
+    ax1 = plt.subplot(121)
+    plot1 = plt.scatter(data[:, 0], data[:, 1], c=clabs)
 
-    x_axis = line(np.array([0, 0]), np.array([3, 0]))
-#    x_axis = np.array([np.array([val, val**2]) for val in np.linspace(1, 4, 100)])
-    x_axis = x_axis - np.mean(x_axis)
-    plot2 = plt.plot(x_axis[:, 0], x_axis[:, 1], label='x')
+#    Kx = np.mat([[kernel_func(xi, xj) for xj in data] for xi in data])
+#    Kx = np.mat(mlpy.kernel_center(Kx, Kx))
+    Kx = np.mat(mlpy.kernel_gaussian(data, data, sigma=2))
+    vals, vecs = np.linalg.eig(Kx)
+    f = open('vecs', 'w')
+    f.write(str(np.real(vecs)))
+    f.close()
 
-    y_axis = line(np.array([0, 0]), np.array([0, 3]))
-    y_axis = y_axis - np.mean(y_axis)
-    plot3 = plt.plot(y_axis[:, 0], y_axis[:, 1], label='y')
+    f = open('vals', 'w')
+    f.write(str(np.real(vals)))
+    f.close()
 
-    xx = plt.xlim(-10, 10)
-    yy = plt.ylim(-10, 10)
+    print vals[0]*vecs[:, 0].T*vecs[:, 0]
 
-    emp_cov = np.cov(data.T)
-    alpha, psi = np.linalg.eig(emp_cov)
-#    x_axis_trans = np.array([psi * np.mat(x_axis[i]).T for i in range(len(x_axis))])
+    norm_mat = np.mat(np.diag([1.0/np.sqrt(vals[i]) for i in range(len(vals))]))
+    vecs = vecs * norm_mat
+    print 'mult:', vals[0] * vecs[:, 0].T * vecs[:, 0]
 
-#    x_axis_trans = np.array((psi * np.mat(x_axis).T).T)
-    x_axis_trans = np.mat(x_axis) * psi.T
-#    plot4 = plt.plot(x_axis_trans[:, 0], x_axis_trans[:, 1], label='x_trans')
+    f = open('vecs_norm', 'w')
+    f.write(str(np.real(vecs)))
+    f.close()
 
-    y_axis_trans = np.mat(y_axis) * psi.T
-#    plot5 = plt.plot(y_axis_trans[:, 0], y_axis_trans[:, 1], label='y_trans')
+    data_k_trans = np.real(Kx.T * vecs[:, :2])
+    print data_k_trans.shape
+    ax2 = plt.subplot(122)
+    plot2 = plt.scatter(data_k_trans[:, 0], data_k_trans[:, 1], c=clabs)
 
-    data_trans = np.mat(data) * psi.T
-    plot51 = plt.plot(data_trans[:, 0], data_trans[:, 1], 'o', label='Lin trans data')
-
-
-    Kx = np.mat([[kernel_func(xi, xj) for xj in data] for xi in data])
-    
-    vals, vecs = np.linalg.eig((1.0 / len(data))*Kx)
-    norm_mat = np.mat(np.diag([1.0/np.sqrt(vals[i] * (vecs[i]*vecs[i].T)[0,0]) for i in range(len(vals))]))
-    vecs = norm_mat * vecs
-    print 'mult:', vals[98] * vecs[98] * vecs[98].T
-
-    data_k_trans = (vecs[:2] * Kx).T
-    plot6 = plt.plot(data_k_trans[:, 0], data_k_trans[:, 1], 'o', label='Kern trans data')
-
-    plt.legend()
     plt.show()
 
 
-def draw_pylab_example(data):
-    pass
+def draw_mlpy_example(data, clabs):
+    gK = mlpy.kernel_gaussian(data, data, sigma=2) # gaussian kernel matrix
+    gaussian_pca = mlpy.KPCA()
+    gaussian_pca.learn(gK)
+    gz = gaussian_pca.transform(gK, k=2)
+
+    f = open('mlpy_vecs', 'w')
+    f.write(str(np.mat(gaussian_pca.coeff())))
+    f.close()
+
+    f = open('mlpy_vals', 'w')
+    f.write(str(gaussian_pca.evals()))
+    f.close()
+
+    fig = plt.figure(1)
+    ax1 = plt.subplot(121)
+    plot1 = plt.scatter(data[:, 0], data[:, 1], c=clabs)
+    title1 = ax1.set_title('Original data')
+    ax2 = plt.subplot(122)
+    plot2 = plt.scatter(gz[:, 0], gz[:, 1], c=clabs)
+    title2 = ax2.set_title('Gaussian kernel')
+    plt.show()
 
 def main():
     args = sys.argv[1:]
@@ -100,8 +112,10 @@ def main():
         x[100:150, 1] = r * np.sin(theta)
         y[100:150] = 2
 
-        kernel_func = polynomial_closure(1)
-        draw_data(x, kernel_func)
+#        kernel_func = partial(mlpy.kernel_gaussian, sigma=2.0)
+        kernel_func = rbf_closure(2.0)
+        draw_data(x, y, kernel_func)
+        draw_mlpy_example(x, y)
 
 
 if __name__ == "__main__":
