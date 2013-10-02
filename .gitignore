@@ -1,2 +1,4 @@
+pictures/
+*.yaml
 *.pyc
 *~

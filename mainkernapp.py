@@ -5,9 +5,9 @@ import sys
 import numpy as np
 import numpy
 import matplotlib.pyplot as plt
-import pylab
 import mlpy
 from functools import partial
+import yaml
 
 def line(stDot, finDot, res=100):
     assert len(stDot) == len(finDot)
@@ -33,34 +33,38 @@ def draw_data(data, clabs, kernel_func):
     ax1 = plt.subplot(121)
     plot1 = plt.scatter(data[:, 0], data[:, 1], c=clabs)
 
-#    Kx = np.mat([[kernel_func(xi, xj) for xj in data] for xi in data])
-#    Kx = np.mat(mlpy.kernel_center(Kx, Kx))
-    Kx = np.mat(mlpy.kernel_gaussian(data, data, sigma=2))
+    Kx = np.mat([[kernel_func(xi, xj) for xj in data] for xi in data])
+    Kx = np.mat(mlpy.kernel_center(Kx, Kx))
     vals, vecs = np.linalg.eig(Kx)
 
-    pylab.plot(vals)
-    pylab.show()
+    gK = mlpy.kernel_gaussian(data, data, sigma=2)
+    print "gK is eqaul to Kx", np.allclose(gK, Kx)
+    gaussian_pca = mlpy.KPCA()
+    gaussian_pca.learn(gK)
 
-    f = open('vecs', 'w')
-    f.write(str(np.real(vecs)))
-    f.close()
+    stream = open('vecs', 'w')
+    yaml.dump(np.real(vecs), stream, default_flow_style=False)
+    stream.close()
 
-    f = open('vals', 'w')
-    f.write(str(np.real(vals)))
-    f.close()
+    stream = open('vals.yaml', 'w')
+    yaml.dump(np.real(vals), stream, default_flow_style=False)
+    stream.close()
 
-    print vals[0]*vecs[:, 0].T*vecs[:, 0]
+    
+    print "mult before normalization", vals[0]*vecs[:, 0].T*vecs[:, 0]
 
     norm_mat = np.mat(np.diag([1.0/np.sqrt(vals[i]) for i in range(len(vals))]))
     vecs = vecs * norm_mat
     print 'mult:', vals[0] * vecs[:, 0].T * vecs[:, 0]
 
-    f = open('vecs_norm', 'w')
-    f.write(str(np.real(vecs)))
-    f.close()
+    stream = open('norm_vecs.yaml', 'w')
+    yaml.dump(np.real(vecs), stream, default_flow_style=False)
+    stream.close()
 
+    mlpy_vecs = np.mat(gaussian_pca.coeff())
+    print 'mlpy_mult:', gaussian_pca.evals()[0] * mlpy_vecs[:, 0].T * mlpy_vecs[:, 0]
     data_k_trans = np.real(Kx.T * vecs[:, :2])
-    print data_k_trans.shape
+    data_k_trans = np.array(data_k_trans)
     ax2 = plt.subplot(122)
     plot2 = plt.scatter(data_k_trans[:, 0], data_k_trans[:, 1], c=clabs)
 
@@ -73,16 +77,13 @@ def draw_mlpy_example(data, clabs):
     gaussian_pca.learn(gK)
     gz = gaussian_pca.transform(gK, k=2)
 
-    f = open('mlpy_vecs', 'w')
-    f.write(str(np.mat(gaussian_pca.coeff())))
-    f.close()
+    stream = open('mlpy_vecs.yaml', 'w')
+    yaml.dump(np.mat(gaussian_pca.coeff()), stream, default_flow_style=False)
+    stream.close()
 
-    f = open('mlpy_vals', 'w')
-    f.write(str(gaussian_pca.evals()))
-    f.close()
-
-    pylab.plot(gaussian_pca.evals())
-    pylab.show()
+    stream = open('mlpy_vals.yaml', 'w')
+    yaml.dump(np.real(gaussian_pca.evals()), stream, default_flow_style=False)
+    stream.close()
 
     fig = plt.figure(1)
     ax1 = plt.subplot(121)
