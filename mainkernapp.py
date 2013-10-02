@@ -42,15 +42,6 @@ def draw_data(data, clabs, kernel_func):
     gaussian_pca = mlpy.KPCA()
     gaussian_pca.learn(gK)
 
-    stream = open('vecs', 'w')
-    yaml.dump(np.real(vecs), stream, default_flow_style=False)
-    stream.close()
-
-    stream = open('vals.yaml', 'w')
-    yaml.dump(np.real(vals), stream, default_flow_style=False)
-    stream.close()
-
-    
     print "mult before normalization", vals[0]*vecs[:, 0].T*vecs[:, 0]
 
     norm_mat = np.mat(np.diag([1.0/np.sqrt(vals[i]) for i in range(len(vals))]))
@@ -76,14 +67,6 @@ def draw_mlpy_example(data, clabs):
     gaussian_pca = mlpy.KPCA()
     gaussian_pca.learn(gK)
     gz = gaussian_pca.transform(gK, k=2)
-
-    stream = open('mlpy_vecs.yaml', 'w')
-    yaml.dump(np.mat(gaussian_pca.coeff()), stream, default_flow_style=False)
-    stream.close()
-
-    stream = open('mlpy_vals.yaml', 'w')
-    yaml.dump(np.real(gaussian_pca.evals()), stream, default_flow_style=False)
-    stream.close()
 
     fig = plt.figure(1)
     ax1 = plt.subplot(121)
