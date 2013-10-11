@@ -2,3 +2,4 @@ pictures/
 *.yaml
 *.pyc
 *~
+*.pkl

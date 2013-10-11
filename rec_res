@@ -1,0 +1,18 @@
+mfcc mlpy.kpca.transform rbf sigma=0.5
+====================== HTK Results Analysis =======================
+  Date: Tue Oct  8 14:30:59 2013
+  Ref : recsystem/testref.mlf
+  Rec : recsystem/recout.mlf
+------------------------ Overall Results --------------------------
+SENT: %Correct=34.09 [H=30, S=58, N=88]
+WORD: %Corr=34.09, Acc=34.09 [H=30, D=0, S=58, I=0, N=88]
+===================================================================
+mfcc
+====================== HTK Results Analysis =======================
+  Date: Tue Oct  8 14:34:36 2013
+  Ref : recsystem/testref.mlf
+  Rec : recsystem/recout.mlf
+------------------------ Overall Results --------------------------
+SENT: %Correct=75.00 [H=66, S=22, N=88]
+WORD: %Corr=85.23, Acc=75.00 [H=75, D=0, S=13, I=9, N=88]
+===================================================================

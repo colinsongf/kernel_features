@@ -7,24 +7,13 @@ import numpy
 import matplotlib.pyplot as plt
 import mlpy
 from functools import partial
-import yaml
+from kernelmethods import kPCA, rbf_closure, KernelRbf
+from datagen import gen_train_data, gen_test_data
+import yaml, pickle
 
 def line(stDot, finDot, res=100):
     assert len(stDot) == len(finDot)
     return np.array([alpha*stDot + (1 - alpha)*finDot for alpha in np.linspace(0, 1, res)])
-
-def rbf_closure(sigma):
-    def rbf(x1, x2):
-        assert isinstance(x1, np.ndarray) and isinstance(x2, np.ndarray)
-        return np.exp(-np.dot((x1 - x2), (x1 - x2)) / (2 * sigma**2))
-    return rbf
-
-def polynomial_closure(ext):
-    def polynomial(x1, x2):
-        assert isinstance(x1, np.ndarray) and isinstance(x2, np.ndarray)
-        return np.dot(x1, x2) ** ext
-    return polynomial
-
 
 def draw_data(data, clabs, kernel_func, testData):
     fig = plt.figure(1) # plot
@@ -50,12 +39,6 @@ def draw_data(data, clabs, kernel_func, testData):
     gaussian_pca = mlpy.KPCA(mlpy.KernelGaussian(2.0))
     gaussian_pca.learn(data)
 
-#    vals = np.mat(gaussian_pca.evals())
-#    vecs = np.mat(gaussian_pca.coeff())
-#    Kx = gK
-#    Kx = np.mat(mlpy.kernel_center(Kx, Kx))
-    
-
     data_k_trans = np.real(Kx.T * vecs[:, :2])
     data_k_trans = np.array(data_k_trans)
     ax2 = plt.subplot(122)
@@ -70,6 +53,26 @@ def draw_data(data, clabs, kernel_func, testData):
 
     plt.show()
 
+def draw_kpca_obj(data, clabs, kernel_func, testData):
+    ax1 = plt.subplot(121)
+    plot1 = plt.scatter(data[:, 0], data[:, 1], c=clabs)
+    plot1_5 = plt.scatter(testData[:, 0], testData[:, 1])
+
+    kTrans = kPCA(kernel_func)
+    kTrans.estim_kbasis(data)
+
+    ax2 = plt.subplot(122)
+
+    data_k_trans = kTrans.transform(data, 2)
+    plot2 = plt.scatter(data_k_trans[:, 0], data_k_trans[:, 1], c=clabs)
+
+    kTransData = kTrans.transform(testData, 2)
+    plot2_5 = plt.scatter(kTransData[:, 0], kTransData[:, 1])
+
+    plt.show()
+    stream = open("kPCA.pkl", 'w')
+    pickle.dump(kTransData, stream)
+    stream.close()
 
 def draw_mlpy_example(data, clabs, testData):
     gK = mlpy.kernel_gaussian(data, data, sigma=2) # gaussian kernel matrix
@@ -89,44 +92,24 @@ def draw_mlpy_example(data, clabs, testData):
     title2 = ax2.set_title('Gaussian kernel')
     plt.show()
 
+    
+
 def main():
     args = sys.argv[1:]
     if not args:
         print "--drawdata"    
         sys.exit(0)
 
+    x, y = gen_train_data([(0, 50), (1, 50), (2, 50)])
+    testData = gen_test_data()
+#    kernel_func = rbf_closure(2.0)
+    kernel_func = KernelRbf(2.0)
     if args[0] == "--drawdata":
-        np.random.seed(0)
-        np.random.seed(0)
-        x = np.zeros((150, 2))
-        y = np.empty(150, dtype=np.int)
-        theta = np.random.normal(0, np.pi, 50)
-        r = np.random.normal(0, 0.1, 50)
-        x[0:50, 0] = r * np.cos(theta)
-        x[0:50, 1] = r * np.sin(theta)
-        y[0:50] = 0
-        theta = np.random.normal(0, np.pi, 50)
-        r = np.random.normal(2, 0.1, 50)
-        x[50:100, 0] = r * np.cos(theta)
-        x[50:100, 1] = r * np.sin(theta)
-        y[50:100] = 1
-        theta = np.random.normal(0, np.pi, 50)
-        r = np.random.normal(5, 0.1, 50)
-        x[100:150, 0] = r * np.cos(theta)
-        x[100:150, 1] = r * np.sin(theta)
-        y[100:150] = 2
-
-        tSamplesTotal = 50
-        testData = np.zeros((tSamplesTotal, 2))
-        theta = np.random.normal(0, np.pi, tSamplesTotal)
-        r = np.random.normal(3, 0.1, tSamplesTotal)
-
-        testData[:, 0] = r * np.sin(theta)
-        testData[:, 1] = r * np.cos(theta)
 #        kernel_func = partial(mlpy.kernel_gaussian, sigma=2.0)
-        kernel_func = rbf_closure(2.0)
         draw_data(x, y, kernel_func, testData)
         draw_mlpy_example(x, y, testData)
+    elif args[0] == "--custkpca":
+        draw_kpca_obj(x, y, kernel_func, testData)
 
 
 if __name__ == "__main__":
