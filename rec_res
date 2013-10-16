@@ -1,4 +1,4 @@
-mfcc mlpy.kpca.transform rbf sigma=0.5
+mfcc mlpy.kpca.transform rbf sigma=0.5 dim(train)=3312
 ====================== HTK Results Analysis =======================
   Date: Tue Oct  8 14:30:59 2013
   Ref : recsystem/testref.mlf
@@ -6,6 +6,33 @@ mfcc mlpy.kpca.transform rbf sigma=0.5
 ------------------------ Overall Results --------------------------
 SENT: %Correct=34.09 [H=30, S=58, N=88]
 WORD: %Corr=34.09, Acc=34.09 [H=30, D=0, S=58, I=0, N=88]
+===================================================================
+mfcc custom kpca.transform rbf sigma=2.0 dim(train)=738
+====================== HTK Results Analysis =======================
+  Date: Fri Oct 11 16:56:30 2013
+  Ref : recsystem/testref.mlf
+  Rec : recsystem/recout.mlf
+------------------------ Overall Results --------------------------
+SENT: %Correct=52.27 [H=46, S=42, N=88]
+WORD: %Corr=52.27, Acc=52.27 [H=46, D=0, S=42, I=0, N=88]
+===================================================================
+mfcc mlpy.kpca.transform rbf sigma=2.0 dim(train)=738
+====================== HTK Results Analysis =======================
+  Date: Fri Oct 11 17:07:26 2013
+  Ref : recsystem/testref.mlf
+  Rec : recsystem/recout.mlf
+------------------------ Overall Results --------------------------
+SENT: %Correct=52.27 [H=46, S=42, N=88]
+WORD: %Corr=52.27, Acc=52.27 [H=46, D=0, S=42, I=0, N=88]
+===================================================================
+mfcc mlpy.kpca.transform rbf sigma=2.0 dim(train)=3312
+====================== HTK Results Analysis =======================
+  Date: Fri Oct 11 17:52:38 2013
+  Ref : recsystem/testref.mlf
+  Rec : recsystem/recout.mlf
+------------------------ Overall Results --------------------------
+SENT: %Correct=40.91 [H=36, S=52, N=88]
+WORD: %Corr=40.91, Acc=40.91 [H=36, D=0, S=52, I=0, N=88]
 ===================================================================
 mfcc
 ====================== HTK Results Analysis =======================

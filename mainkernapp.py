@@ -7,7 +7,7 @@ import numpy
 import matplotlib.pyplot as plt
 import mlpy
 from functools import partial
-from kernelmethods import kPCA, rbf_closure, KernelRbf
+from kernelmethods import kPCA, kPLS, rbf_closure, KernelRbf
 from datagen import gen_train_data, gen_test_data
 import yaml, pickle
 
@@ -58,19 +58,19 @@ def draw_kpca_obj(data, clabs, kernel_func, testData):
     plot1 = plt.scatter(data[:, 0], data[:, 1], c=clabs)
     plot1_5 = plt.scatter(testData[:, 0], testData[:, 1])
 
-    kTrans = kPCA(kernel_func)
-    kTrans.estim_kbasis(data)
+    kTrans = kPLS(kernel_func)
+    kTrans.estim_kbasis(data, clabs)
 
     ax2 = plt.subplot(122)
 
-    data_k_trans = kTrans.transform(data, 2)
+    data_k_trans = kTrans.transform(data, k=2)
     plot2 = plt.scatter(data_k_trans[:, 0], data_k_trans[:, 1], c=clabs)
 
     kTransData = kTrans.transform(testData, 2)
     plot2_5 = plt.scatter(kTransData[:, 0], kTransData[:, 1])
 
     plt.show()
-    stream = open("kPCA.pkl", 'w')
+    stream = open("kPLS.pkl", 'w')
     pickle.dump(kTransData, stream)
     stream.close()
 
