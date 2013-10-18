@@ -34,6 +34,15 @@ mfcc mlpy.kpca.transform rbf sigma=2.0 dim(train)=3312
 SENT: %Correct=40.91 [H=36, S=52, N=88]
 WORD: %Corr=40.91, Acc=40.91 [H=36, D=0, S=52, I=0, N=88]
 ===================================================================
+mfcc kPLS(not fixed) rbf sigma=2.0 dim(train)=738
+====================== HTK Results Analysis =======================
+  Date: Fri Oct 18 17:15:25 2013
+  Ref : recsystem/testref.mlf
+  Rec : recsystem/recout.mlf
+------------------------ Overall Results --------------------------
+SENT: %Correct=55.68 [H=49, S=39, N=88]
+WORD: %Corr=55.68, Acc=55.68 [H=49, D=0, S=39, I=0, N=88]
+===================================================================
 mfcc
 ====================== HTK Results Analysis =======================
   Date: Tue Oct  8 14:34:36 2013

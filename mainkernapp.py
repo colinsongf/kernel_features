@@ -7,7 +7,7 @@ import numpy
 import matplotlib.pyplot as plt
 import mlpy
 from functools import partial
-from kernelmethods import kPCA, kPLS, rbf_closure, KernelRbf
+from kernelmethods import kPCA, kPLS, polynomial_closure, rbf_closure, KernelRbf
 from datagen import gen_train_data, gen_test_data
 import yaml, pickle
 
@@ -53,24 +53,23 @@ def draw_data(data, clabs, kernel_func, testData):
 
     plt.show()
 
-def draw_kpca_obj(data, clabs, kernel_func, testData):
+def draw_kmva_obj(data, clabs, kMVA, testData):
     ax1 = plt.subplot(121)
     plot1 = plt.scatter(data[:, 0], data[:, 1], c=clabs)
     plot1_5 = plt.scatter(testData[:, 0], testData[:, 1])
 
-    kTrans = kPLS(kernel_func)
-    kTrans.estim_kbasis(data, clabs)
+    kMVA.estim_kbasis(data, clabs)
 
     ax2 = plt.subplot(122)
 
-    data_k_trans = kTrans.transform(data, k=2)
+    data_k_trans = kMVA.transform(data, k=2)
     plot2 = plt.scatter(data_k_trans[:, 0], data_k_trans[:, 1], c=clabs)
 
-    kTransData = kTrans.transform(testData, 2)
+    kTransData = kMVA.transform(testData, 2)
     plot2_5 = plt.scatter(kTransData[:, 0], kTransData[:, 1])
 
     plt.show()
-    stream = open("kPLS.pkl", 'w')
+    stream = open("kMVA.pkl", 'w')
     pickle.dump(kTransData, stream)
     stream.close()
 
@@ -96,20 +95,24 @@ def draw_mlpy_example(data, clabs, testData):
 
 def main():
     args = sys.argv[1:]
+    prompt = "\t\t\t--drawdata\n\t\t\t--custmva\n"    
     if not args:
-        print "--drawdata"    
+        print prompt
         sys.exit(0)
 
     x, y = gen_train_data([(0, 50), (1, 50), (2, 50)])
     testData = gen_test_data()
-#    kernel_func = rbf_closure(2.0)
+#    kernel_func = polynomial_closure(2)
     kernel_func = KernelRbf(2.0)
     if args[0] == "--drawdata":
 #        kernel_func = partial(mlpy.kernel_gaussian, sigma=2.0)
         draw_data(x, y, kernel_func, testData)
         draw_mlpy_example(x, y, testData)
-    elif args[0] == "--custkpca":
-        draw_kpca_obj(x, y, kernel_func, testData)
+    elif args[0] == "--custkmva":
+        kMVA = kPLS(kernel_func)
+        draw_kmva_obj(x, y, kMVA, testData)
+    else:
+        print "Wrong command! Choose:\n", prompt
 
 
 if __name__ == "__main__":
