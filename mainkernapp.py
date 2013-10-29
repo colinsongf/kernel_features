@@ -5,11 +5,14 @@ import sys
 import numpy as np
 import numpy
 import matplotlib.pyplot as plt
+import matplotlib.cm as cm
 import mlpy
 from functools import partial
-from kernelmethods import kPCA, kPLS, polynomial_closure, rbf_closure, KernelRbf
+from kernelmethods import kPCA, kPLS, polynomial_closure, rbf_closure, KernelRbf, distance_prop
 from datagen import gen_train_data, gen_test_data
-import yaml, pickle
+import yaml, pickle, ghmm
+from vistools import plotGHMMEmiss
+
 
 def line(stDot, finDot, res=100):
     assert len(stDot) == len(finDot)
@@ -91,11 +94,49 @@ def draw_mlpy_example(data, clabs, testData):
     title2 = ax2.set_title('Gaussian kernel')
     plt.show()
 
-    
+def init_hmm():
+    account = ghmm.Float()   # emission domain of this model
+    transMatr = [[0.6, 0.4, 0.0],[0.0, 0.6, 0.4],[0.0, 0.0, 1.0]]   # transition matrixa
+    pi = [1.0,0.0,0.0]
+
+    stateParams = [
+           [ [0.0, 0.0], [2.0, 0.0, 0.0, 1.0], 
+             [0.0, 0.0], [1.0, 0.0, 0.0, 1.0],
+             [0.6, 0.4] ],
+           [ [0.0, 0.0], [1.0, 0.0, 0.0, 1.0], 
+             [0.0, 0.0], [1.0, 0.0, 0.0, 1.0],
+             [0.3, 0.7] ],
+           [ [0.0, 0.0], [1.0, 0.0, 0.0, 1.0], 
+             [0.0, 0.0], [1.0, 0.0, 0.0, 1.0],
+             [0.3, 0.7] ],
+           ]
+
+    return ghmm.HMMFromMatrices(account,ghmm.MultivariateGaussianDistribution(account),
+                                transMatr, stateParams, pi)
+
+
+def apply_hmm(data, clabs, kMVA):
+         
+    kMVA.estim_kbasis(data, clabs)
+    data = kMVA.transform(data, k=2)
+
+    model = init_hmm()
+    data = [list(x) for x in data]
+    dt, T = 1, 2
+    seq_set = ghmm.SequenceSet(ghmm.Float(), [sum(list(data[i:i+T]), []) for i in range(0, len(data) - T, dt)])
+    model.baumWelch(seq_set, 10, 0.01)
+
+    f = open('hmm', 'w')
+    f.write(str(model))
+    f.close()
+
+    plotGHMMEmiss(model, stInd=0, dimInd=1)
+
 
 def main():
     args = sys.argv[1:]
-    prompt = "\t\t\t--drawdata\n\t\t\t--custmva\n"    
+    print args
+    prompt = ('\t' * 1).join(["--drawdata", "--custkmva", "--applyhmm"])    
     if not args:
         print prompt
         sys.exit(0)
@@ -103,18 +144,20 @@ def main():
     x, y = gen_train_data([(0, 50), (1, 50), (2, 50)])
     testData = gen_test_data()
 #    kernel_func = polynomial_closure(2)
-    kernel_func = KernelRbf(2.0)
+    print "median:", distance_prop(x, np.median)
+    kernel_func = KernelRbf(distance_prop(x, np.median))
+    kMVA = kPLS(kernel_func)
     if args[0] == "--drawdata":
 #        kernel_func = partial(mlpy.kernel_gaussian, sigma=2.0)
         draw_data(x, y, kernel_func, testData)
         draw_mlpy_example(x, y, testData)
     elif args[0] == "--custkmva":
-        kMVA = kPLS(kernel_func)
         draw_kmva_obj(x, y, kMVA, testData)
+    elif args[0] == "--applyhmm":
+        apply_hmm(x, y, kMVA)
     else:
         print "Wrong command! Choose:\n", prompt
 
 
 if __name__ == "__main__":
-    print "Hello!"
     main()

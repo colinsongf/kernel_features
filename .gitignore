@@ -1,4 +1,6 @@
 pictures/
+R/
+octave/
 *.yaml
 *.pyc
 *~

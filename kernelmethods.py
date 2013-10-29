@@ -2,6 +2,12 @@
 
 import numpy as np
 import mlpy, pylab
+import matplotlib.pyplot as plt
+import matplotlib.cm as cm
+from itertools import combinations
+
+def distance_prop(data, prop=np.mean):
+    return prop([np.linalg.norm(np.array(x) - np.array(y)) for x, y in combinations(data, 2)])
 
 def one_of_c(clabs):
     labsInds = {l: ind for ind, l in enumerate(set(clabs))}
@@ -66,6 +72,8 @@ class kPLS(KernelMethod):
         Kx = np.mat([[self.kernel_func(np.array(xi), np.array(xj)) for xj in self.trData] for xi in self.trData])
         Kx = np.mat(mlpy.kernel_center(Kx, Kx))
         matForEig = np.mat(np.vstack([np.hstack([np.zeros(Kx.shape), Kx * Y]), np.hstack([Y.T * Kx, np.zeros((Y.shape[1], Y.shape[1]))])]))
+#        plt.imshow(Kx, cmap = cm.Greys_r)
+#        plt.show()
         vals, vecs = np.linalg.eig(matForEig)
         vals = vals[:Kx.shape[0]]
         #print vals[:20]
