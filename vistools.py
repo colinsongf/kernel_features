@@ -14,15 +14,18 @@ def multinormal_pdf(r, mean, cov):
 
 def get_weight(state, mixtCompInd):
     return ghmm.ghmmwrapper.double_array_getitem(state.c, mixtCompInd)
-    
+
+def gauss_func(x, mu, sigma):
+    return (1.0 / (2 * np.pi * sigma)) * np.exp(-((x - mu) ** 2) / sigma)
 
 def plotGHMMEmiss(model, stInd, dimInd):
     state = ghmm.ghmmwrapper.cstate_array_getRef(model.cmodel.s, stInd) 
     model.getEmission(0, 0) 
     
     emission = state.getEmission(0)
+    mean0 = ghmm.ghmmwrapper.double_array2list(emission.mean.vec,emission.dimension)[dimInd]
     sigma0 = ghmm.ghmmwrapper.double_array2list(emission.variance.mat,emission.dimension*emission.dimension)[dimInd * emission.dimension + dimInd]
-    x = np.linspace(-3 * sigma0, 3 * sigma0, 100)
+    x = np.linspace(mean0 -4 * sigma0, mean0 + 4 * sigma0, 100)
     dx = 6 * sigma0 / 100
     p = np.zeros(len(x))
     for mixtCompInd in range(state.M):
@@ -33,7 +36,7 @@ def plotGHMMEmiss(model, stInd, dimInd):
         print sigma,
         weight = get_weight(state, mixtCompInd)
         print weight
-        p += weight * norm.pdf(x,loc=mean,scale=sigma)
+        p += weight * gauss_func(x, mean, sigma)
 
     plot1 = plt.plot(x, p)
     plt.show()

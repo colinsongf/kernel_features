@@ -1,6 +1,6 @@
 #! /usr/bin/python
 
-import sys
+import sys, os
 
 import numpy as np
 import numpy
@@ -9,9 +9,10 @@ import matplotlib.cm as cm
 import mlpy
 from functools import partial
 from kernelmethods import kPCA, kPLS, polynomial_closure, rbf_closure, KernelRbf, distance_prop
-from datagen import gen_train_data, gen_test_data
+from datagen import gen_train_data, gen_test_data, phoneme_dict
 import yaml, pickle, ghmm
 from vistools import plotGHMMEmiss
+from hmmroutines import init_hmm
 
 
 def line(stDot, finDot, res=100):
@@ -48,6 +49,7 @@ def draw_data(data, clabs, kernel_func, testData):
     plot2 = plt.scatter(data_k_trans[:, 0], data_k_trans[:, 1], c=clabs)
 
     Kt = np.mat([[kernel_func(xi, xj) for xj in data] for xi in testData])
+
     Kt = np.mat(mlpy.kernel_center(Kt, KxCopy))
     kTransTestData = np.real(Kt * vecs[:, :2])
     kTransTestData = np.array(kTransTestData)
@@ -94,43 +96,39 @@ def draw_mlpy_example(data, clabs, testData):
     title2 = ax2.set_title('Gaussian kernel')
     plt.show()
 
-def init_hmm():
-    account = ghmm.Float()   # emission domain of this model
-    transMatr = [[0.6, 0.4, 0.0],[0.0, 0.6, 0.4],[0.0, 0.0, 1.0]]   # transition matrixa
-    pi = [1.0,0.0,0.0]
-
-    stateParams = [
-           [ [0.0, 0.0], [2.0, 0.0, 0.0, 1.0], 
-             [0.0, 0.0], [1.0, 0.0, 0.0, 1.0],
-             [0.6, 0.4] ],
-           [ [0.0, 0.0], [1.0, 0.0, 0.0, 1.0], 
-             [0.0, 0.0], [1.0, 0.0, 0.0, 1.0],
-             [0.3, 0.7] ],
-           [ [0.0, 0.0], [1.0, 0.0, 0.0, 1.0], 
-             [0.0, 0.0], [1.0, 0.0, 0.0, 1.0],
-             [0.3, 0.7] ],
-           ]
-
-    return ghmm.HMMFromMatrices(account,ghmm.MultivariateGaussianDistribution(account),
-                                transMatr, stateParams, pi)
-
 
 def apply_hmm(data, clabs, kMVA):
          
     kMVA.estim_kbasis(data, clabs)
     data = kMVA.transform(data, k=2)
 
-    model = init_hmm()
+    model = init_hmm(3, 3, 2)
+
     data = [list(x) for x in data]
     dt, T = 1, 2
     seq_set = ghmm.SequenceSet(ghmm.Float(), [sum(list(data[i:i+T]), []) for i in range(0, len(data) - T, dt)])
     model.baumWelch(seq_set, 10, 0.01)
 
-    f = open('hmm', 'w')
-    f.write(str(model))
-    f.close()
-
     plotGHMMEmiss(model, stInd=0, dimInd=1)
+
+
+def apply_hmm_to_phonemes(phData, cLabs):
+    somePh = phData.keys()[0]
+    print somePh, len(phData[somePh][0][0])
+    hmm = init_hmm(nStates=3, nMix=2, dim=len(phData[somePh][0][0]))
+    seq_set = ghmm.SequenceSet(ghmm.Float(), [sum(phSample, []) for phSample in phData[somePh]])
+    hmm.baumWelch(seq_set)
+    plotGHMMEmiss(hmm, stInd=0, dimInd=1)
+    
+    loglikel = [hmm.loglikelihood(seq) for seq in seq_set]
+    pl = plt.plot(loglikel)
+    plt.show()
+
+#    seq = hmm.sampleSingle(8)
+#    print len(seq), hmm.loglikelihood(seq), hmm.viterbi(seq)
+    f = open('hmm', 'w')
+    f.write(str(hmm))
+    f.close()
 
 
 def main():
@@ -140,7 +138,7 @@ def main():
     if not args:
         print prompt
         sys.exit(0)
-
+    recSysDir = 'recsystem'
     x, y = gen_train_data([(0, 50), (1, 50), (2, 50)])
     testData = gen_test_data()
 #    kernel_func = polynomial_closure(2)
@@ -155,6 +153,15 @@ def main():
         draw_kmva_obj(x, y, kMVA, testData)
     elif args[0] == "--applyhmm":
         apply_hmm(x, y, kMVA)
+    elif args[0] == "--applyphhmm":
+        if len(args) == 3:
+            samples = phoneme_dict(args[1], args[2], recSysDir)
+            print len(samples)
+            for smpl in samples:
+                print smpl, ': ', len(samples[smpl]), np.mean([len(phSmpl) for phSmpl in samples[smpl]])
+            apply_hmm_to_phonemes(samples, [])
+        else:
+            print "--applyphhmm paramdbpath labdbpath"
     else:
         print "Wrong command! Choose:\n", prompt
 
