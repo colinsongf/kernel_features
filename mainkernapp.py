@@ -12,7 +12,7 @@ from kernelmethods import kPCA, kPLS, polynomial_closure, rbf_closure, KernelRbf
 from datagen import gen_train_data, gen_test_data, phoneme_dict
 import yaml, pickle, ghmm
 from vistools import plotGHMMEmiss
-from hmmroutines import init_hmm
+from hmmroutines import init_hmm, HMMClassifier
 
 
 def line(stDot, finDot, res=100):
@@ -112,6 +112,7 @@ def apply_hmm(data, clabs, kMVA):
     plotGHMMEmiss(model, stInd=0, dimInd=1)
 
 
+
 def apply_hmm_to_phonemes(phData, cLabs):
     somePh = phData.keys()[0]
     print somePh, len(phData[somePh][0][0])
@@ -120,16 +121,27 @@ def apply_hmm_to_phonemes(phData, cLabs):
     hmm.baumWelch(seq_set)
     plotGHMMEmiss(hmm, stInd=0, dimInd=1)
     
+    train = []
+    target = []
+    for ph in phData:
+        train += phData[ph]
+        target += [ph] * len(phData[ph])
+
+    print len(train), len(target)
+
     loglikel = [hmm.loglikelihood(seq) for seq in seq_set]
     pl = plt.plot(loglikel)
     plt.show()
 
 #    seq = hmm.sampleSingle(8)
 #    print len(seq), hmm.loglikelihood(seq), hmm.viterbi(seq)
-    f = open('hmm', 'w')
-    f.write(str(hmm))
-    f.close()
+    hmmcl = HMMClassifier(nStates=3, nMix=2)
+    hmmcl.train(train, target)
+    print len(hmmcl.modelsDict)
 
+    f = open('hmm_obj_new', 'w')
+    f.write(str(hmmcl.modelsDict['o']))
+    f.close()
 
 def main():
     args = sys.argv[1:]
