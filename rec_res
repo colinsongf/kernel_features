@@ -52,3 +52,23 @@ mfcc
 SENT: %Correct=75.00 [H=66, S=22, N=88]
 WORD: %Corr=85.23, Acc=75.00 [H=75, D=0, S=13, I=9, N=88]
 ===================================================================
+mfcc cca rbf sigma=3.4 dim(train)=3312
+====================== HTK Results Analysis =======================
+  Date: Tue Nov 26 16:53:53 2013
+  Ref : recsystem/testref.mlf
+  Rec : recsystem/recout.mlf
+------------------------ Overall Results --------------------------
+SENT: %Correct=64.77 [H=57, S=31, N=88]
+WORD: %Corr=65.91, Acc=64.77 [H=58, D=0, S=30, I=1, N=88]
+===================================================================
+
+hmm classification mfcc+pca
+phoneme accuracy: 0.890489913545
+train: Word_1 -- Word_44 (3312 samples)
+test:  Word_1 -- Word_44 (3312 samples)
+
+hmm classification mfcc
+phoneme accuracy: 0.890489913545
+train: Word_1 -- Word_44 (3312 samples)
+test:  Word_1 -- Word_44 (3312 samples)
+

@@ -97,3 +97,25 @@ class kPLS(KernelMethod):
         Kt = np.mat(mlpy.kernel_center(Kt, Kx))
         kTransTestData = np.real(Kt * self.vecs[:, :k])
         return np.array(kTransTestData)
+
+
+class kCCAWrapper(KernelMethod):
+    def _read_dat(self, fn):
+        f = open(fn, 'r')
+        data = []
+        for line in f:
+            if not line.startswith('#') and len(line.split()) > 0:
+                data.append([float(numb) for numb in line.split()])
+        f.close()
+        return data
+        
+    def load_basis(self, Kxfn, Wxfn, trainfn):
+        self.Kx = np.mat(self._read_dat(Kxfn))
+        self.vecs = np.mat(self._read_dat(Wxfn))
+        self.trData = self._read_dat(trainfn)
+
+    def transform(self, data, k=2):
+        Kt = np.mat([[self.kernel_func(np.array(xi), np.array(xj)) for xj in self.trData] for xi in data])
+        Kt = np.mat(mlpy.kernel_center(Kt, self.Kx))
+        kTransTestData = np.real(Kt * self.vecs[:, :k])
+        return np.array(kTransTestData)
