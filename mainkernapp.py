@@ -3,7 +3,7 @@
 import sys, os
 
 import numpy as np
-import numpy
+import numpy, pickle
 import matplotlib.pyplot as plt
 import matplotlib.cm as cm
 import mlpy
@@ -12,8 +12,9 @@ from kernelmethods import kPCA, kPLS, polynomial_closure, rbf_closure, KernelRbf
 from datagen import gen_train_data, gen_test_data, phoneme_dict
 import yaml, pickle, ghmm
 from vistools import plotGHMMEmiss
-from hmmroutines import init_hmm, HMMClassifier, HMMFromGHMMConverter
-
+from hmmroutines import init_hmm, HMMClassifier, HMMFromGHMMConverter, hmm_built_from, \
+    HmmFromGHMMBuilder, HmmFromHTKBuilder
+ 
 
 def line(stDot, finDot, res=100):
     assert len(stDot) == len(finDot)
@@ -111,49 +112,60 @@ def apply_hmm(data, clabs, kMVA):
 
     plotGHMMEmiss(model, stInd=0, dimInd=1)
 
-
-
-def apply_hmm_to_phonemes(phData):
+def check_particular_phoneme(phData):
+    syspath = 'recsystem'
     somePh = phData.keys()[0]
     print somePh, len(phData[somePh][0]), len(phData[somePh][0][0])
     for sample in phData[somePh][0]:
         p = plt.plot(sample)
     plt.grid(True)
     plt.show()
-    hmm = init_hmm(nStates=2, nMix=1, dim=len(phData[somePh][0][0]))
+    hmm = init_hmm(nStates=3, nMix=1, dim=len(phData[somePh][0][0]))
     seq_set = ghmm.SequenceSet(ghmm.Float(), [sum(phSample, []) for phSample in phData[somePh]])
     print 'Let us train it!'
     hmm.baumWelch(seq_set)
-    
-    hmmReloaded = HMMClassifier.reassigned_ghmm_object(hmm)
+#    print os.path.join(syspath, 'hmm', somePh)
+#    hmm = hmm_built_from(HmmFromGHMMBuilder, os.path.join(syspath, 'hmm', somePh))
+    hmmReloaded = HMMClassifier.reassigned_ghmm_object(hmm, 0.5)
     loglikel = [hmmReloaded.loglikelihood(seq) for seq in seq_set]
 
     pl = plt.plot(loglikel)
     plt.show()
 #    print len(seq), hmm.loglikelihood(seq), hmm.viterbi(seq)
-#    return
+
+
+def apply_hmm_to_phonemes(trPhData, testPhData):
+    syspath = 'recsystem'
     
     train = []
-    target = []
-    for ph in phData:
-        train += phData[ph]
-        target += [ph] * len(phData[ph])
+    trTarget = []
+    for ph in trPhData:
+        train += trPhData[ph]
+        trTarget += [ph] * len(trPhData[ph])
 
-    print len(train), len(target)
+    print len(train), len(trTarget)
 
-
-    hmmcl = HMMClassifier(nStates=3, nMix=2)
-    hmmcl.train(train, target)
+    hmmcl = HMMClassifier(nStates=3, nMix=1)
+    hmmcl.train(train, trTarget)
+    #hmmcl.load(phData.keys())
     hmmcl.refine_cov_matrix()
     print len(hmmcl.modelsDict)
 
-    predRes = hmmcl.predict(train)
-    print sum([1 if t == p else 0 for t, p in zip(target, predRes)]) / float(len(target))
-#    print len(target)
+    test = []
+    testTarget = []
+    for ph in testPhData:
+        test += testPhData[ph]
+        testTarget += [ph] * len(testPhData[ph])
+
+    print len(train), len(testTarget)
+
+    predRes = hmmcl.predict(test)
+    print sum([1 if t == p else 0 for t, p in zip(testTarget, predRes)]) / float(len(testTarget))
 
     f = open('results', 'w')
-    yaml.dump(zip(target, predRes), f, default_flow_style=False)
+    yaml.dump(zip(testTarget, predRes), f, default_flow_style=False)
     f.close()
+
 
 def main():
     args = sys.argv[1:]
@@ -178,12 +190,19 @@ def main():
     elif args[0] == "--applyhmm":
         apply_hmm(x, y, kMVA)
     elif args[0] == "--applyphhmm":
-        if len(args) == 3:
-            samples = phoneme_dict(args[1], args[2], recSysDir)
-            print len(samples)
-            for smpl in samples:
-                print smpl, ': ', len(samples[smpl]), np.mean([len(phSmpl) for phSmpl in samples[smpl]])
-            apply_hmm_to_phonemes(samples)
+        if len(args) == 4:
+            trDir, testDir, labDir = args[1:]
+            trSamples = phoneme_dict(trDir, labDir, recSysDir)
+            print 'len(trSamples) =', len(trSamples)
+            for smpl in trSamples:
+                print smpl, ': ', len(trSamples[smpl]), np.mean([len(phSmpl) for phSmpl in trSamples[smpl]])
+
+            testSamples = phoneme_dict(testDir, labDir, recSysDir)
+            print 'len(testSamples) =', len(testSamples)
+            for smpl in testSamples:
+                print smpl, ': ', len(testSamples[smpl]), np.mean([len(phSmpl) for phSmpl in testSamples[smpl]])
+
+            apply_hmm_to_phonemes(trSamples, testSamples)
         else:
             print "--applyphhmm paramdbpath labdbpath"
     else:

@@ -1,9 +1,11 @@
 import numpy as np
-import ghmm
+import ghmm, os
 
 import sys
 sys.path.append("/home/kuzaleks/Projects/NetBeansProjects/viterby_algorithm/src")
-from hmmbuilder import HMMFromGHMMConverter
+from hmmbuilder import HMMFromGHMMConverter, hmm_built_from, HmmFromGHMMBuilder, HmmFromHTKBuilder
+
+
 
 def init_toy_hmm():
     account = ghmm.Float()   # emission domain of this model
@@ -84,17 +86,21 @@ class HMMClassifier(object):
             hmm.baumWelch(seq_set)
             self.modelsDict[phoneme] = hmm
 
+    def load(self, hmmDefFileList, pathToHmm='recsystem/hmm'):
+        for hmmDeffn in hmmDefFileList:
+            ph = os.path.basename(hmmDeffn)
+            self.modelsDict[ph] = hmm_built_from(HmmFromGHMMBuilder, os.path.join(pathToHmm, hmmDeffn))
+
     def refine_cov_matrix(self, threshold=0.5):
-        newSigma = [(threshold if i % (self.dim+1) == 0 else 0.0) for i in range(self.dim*self.dim)]
+#        newSigma = [(threshold if i % (self.dim+1) == 0 else 0.0) for i in range(self.dim*self.dim)]
         
         for ph in self.modelsDict:
-            for stInd in range(self.modelsDict[ph].N):
-                
-                mu, sigma = self.modelsDict[ph].getEmission(stInd, 0)
-                stateParam = [mu, newSigma]
-                self.modelsDict[ph].setEmission(stInd, 0, stateParam)
-                self.modelsDict[ph].normalize()
-                self.modelsDict[ph] = HMMClassifier.reassigned_ghmm_object(self.modelsDict[ph])
+#            for stInd in range(self.modelsDict[ph].N):
+#                mu, sigma = self.modelsDict[ph].getEmission(stInd, 0)
+#                stateParam = [mu, newSigma]
+#                self.modelsDict[ph].setEmission(stInd, 0, stateParam)
+#            self.modelsDict[ph].normalize()
+            self.modelsDict[ph] = HMMClassifier.reassigned_ghmm_object(self.modelsDict[ph], threshold)
 
 
     def predict(self, testData):
@@ -120,10 +126,12 @@ class HMMClassifier(object):
 
         return ghmm.HMMFromMatrices(account,ghmm.MultivariateGaussianDistribution(account), transMatr, stParams, pi)
 
-    def reassigned_ghmm_object(genObj):
+    def reassigned_ghmm_object(genObj, threshold):
         B = []
         for stInd in range(genObj.N):
             mu, sigma = genObj.getEmission(stInd, 0)
+            dim = len(mu)
+            sigma = [(threshold if i % (dim+1) == 0 else 0.0) for i in range(dim*dim)]
             B.append([mu, sigma, [1.0]])
         A = [[genObj.getTransition(fr, to) for to in range(genObj.N)] for fr in range(genObj.N)]
         pi = [1.0] + [0.0] * (genObj.N - 1)

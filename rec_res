@@ -63,6 +63,7 @@ WORD: %Corr=65.91, Acc=64.77 [H=58, D=0, S=30, I=1, N=88]
 ===================================================================
 
 hmm classification mfcc+pca
+['a', 'i', 'je', 'k', 'l', 'm', "m'", 'n', "n'", 'o', 'r', 's', "s'", 'sil', 't', 'v']
 phoneme accuracy: 0.890489913545
 train: Word_1 -- Word_44 (3312 samples)
 test:  Word_1 -- Word_44 (3312 samples)
@@ -72,3 +73,28 @@ phoneme accuracy: 0.890489913545
 train: Word_1 -- Word_44 (3312 samples)
 test:  Word_1 -- Word_44 (3312 samples)
 
+# samples are full phoneme sequances
+
+hmm classification mfcc+kpca
+['a', 'i', 'k', 'n', 'r', 's', 'v']
+phoneme accuracy: 0.889447236181
+train: Word_1 -- Word_44, Str_1 -- Str_10 (398 samples)
+test:  Word_1 -- Word_44, Str_1 -- Str_10 (398 samples)
+
+hmm classification mfcc
+['a', 'i', 'k', 'n', 'r', 's', 'v']
+phoneme accuracy: 0.869346733668
+train: Word_1 -- Word_44, Str_1 -- Str_10 (398 samples)
+test:  Word_1 -- Word_44, Str_1 -- Str_10 (398 samples)
+
+hmm classification mfcc+kpca
+['a', 'i', 'k', 'n', 'r', 's', 'v']
+phoneme accuracy: 0.884289746002
+train: Word_1 -- Word_44, Str_1 -- Str_10 (398 samples)
+test:  Str_11 -- Str_100 (1063 samples)
+
+hmm classification mfcc
+['a', 'i', 'k', 'n', 'r', 's', 'v']
+phoneme accuracy: 0.874882408278
+train: Word_1 -- Word_44, Str_1 -- Str_10 (398 samples)
+test:  Str_11 -- Str_100 (1063 samples)
