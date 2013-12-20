@@ -4,6 +4,7 @@ import numpy as np
 import mlpy, pylab
 import matplotlib.pyplot as plt
 import matplotlib.cm as cm
+from scipy.linalg import eig
 from itertools import combinations
 
 def distance_prop(data, prop=np.mean):
@@ -90,6 +91,52 @@ class kPLS(KernelMethod):
         #plobj2 = pylab.plot(vecs[:, 0])
         #pylab.show()
         #self.vecs = vecs
+
+    def transform(self, data, k=2):
+        Kx = np.mat([[self.kernel_func(np.array(xi), np.array(xj)) for xj in self.trData] for xi in self.trData])
+        Kt = np.mat([[self.kernel_func(np.array(xi), np.array(xj)) for xj in self.trData] for xi in data])
+        Kt = np.mat(mlpy.kernel_center(Kt, Kx))
+        kTransTestData = np.real(Kt * self.vecs[:, :k])
+        return np.array(kTransTestData)
+
+class kOPLS(KernelMethod):
+    def estim_kbasis(self, trData, labels):
+        self.trData = trData
+        self.vecs = []
+        Y = one_of_c(labels)
+        print "rank Y", np.linalg.matrix_rank(Y)  
+        Kx = np.mat([[self.kernel_func(np.array(xi), np.array(xj)) for xj in self.trData] for xi in self.trData])
+        Kx = np.mat(mlpy.kernel_center(Kx, Kx))
+        self.Kx = Kx
+        Ky = Y * Y.T
+        print Y.shape, Ky.shape
+        print "Ky rankf", np.linalg.matrix_rank(Ky)
+        Ky = np.mat(mlpy.kernel_center(Ky, Ky))
+        for k in range(2):
+
+#        plt.imshow(Kx, cmap = cm.Greys_r)
+#        plt.show()
+            vals, vecs = eig(Kx*Ky*Kx, Kx*Kx)
+            vals = np.array([np.real(v) for v in vals])
+            alpha = vecs[:, vals.argmax()]
+            lamb = vals.max()
+            plt.plot(vals)
+
+
+            alpha = np.mat(alpha).T
+            normTerm = (alpha.T * Kx) * (Kx * alpha)
+
+        #print 'mult before norm:', normTerm
+            alpha = alpha / np.sqrt(normTerm)
+            print 'mult after norm:', (alpha.T * Kx) * (Kx * alpha)
+        
+            self.vecs.append(alpha)
+#        self.vecs = self.vecs * norm_mat
+            print np.linalg.matrix_rank(Kx*Ky*Kx)
+            Ky = Ky - lamb * (Kx * alpha) * (alpha.T * Kx)
+            print np.linalg.matrix_rank(Kx*Ky*Kx)
+
+        plt.show()
 
     def transform(self, data, k=2):
         Kx = np.mat([[self.kernel_func(np.array(xi), np.array(xj)) for xj in self.trData] for xi in self.trData])

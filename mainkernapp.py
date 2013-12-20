@@ -8,7 +8,7 @@ import matplotlib.pyplot as plt
 import matplotlib.cm as cm
 import mlpy
 from functools import partial
-from kernelmethods import kPCA, kPLS, polynomial_closure, rbf_closure, KernelRbf, distance_prop
+from kernelmethods import kPCA, kPLS, kOPLS, polynomial_closure, rbf_closure, KernelRbf, distance_prop
 from datagen import gen_train_data, gen_test_data, phoneme_dict
 import yaml, pickle, ghmm
 from vistools import plotGHMMEmiss
@@ -60,23 +60,24 @@ def draw_data(data, clabs, kernel_func, testData):
     plt.show()
 
 def draw_kmva_obj(data, clabs, kMVA, testData):
-    ax1 = plt.subplot(121)
-    plot1 = plt.scatter(data[:, 0], data[:, 1], c=clabs)
-    plot1_5 = plt.scatter(testData[:, 0], testData[:, 1])
+#    ax1 = plt.subplot(121)
+#    plot1 = plt.scatter(data[:, 0], data[:, 1], c=clabs)
+#    plot1_5 = plt.scatter(testData[:, 0], testData[:, 1])
 
     kMVA.estim_kbasis(data, clabs)
+    print kMVA.__class__.__name__ + " created"
+#    ax2 = plt.subplot(122)
 
-    ax2 = plt.subplot(122)
+#    data_k_trans = kMVA.transform(data, k=2)
+#    plot2 = plt.scatter(data_k_trans[:, 0], data_k_trans[:, 1], c=clabs)
 
-    data_k_trans = kMVA.transform(data, k=2)
-    plot2 = plt.scatter(data_k_trans[:, 0], data_k_trans[:, 1], c=clabs)
-
-    kTransData = kMVA.transform(testData, 2)
-    plot2_5 = plt.scatter(kTransData[:, 0], kTransData[:, 1])
+#    kTransData = kMVA.transform(testData, 2)
+#    plot2_5 = plt.scatter(kTransData[:, 0], kTransData[:, 1])
 
     plt.show()
-    stream = open("kMVA.pkl", 'w')
-    pickle.dump(kTransData, stream)
+
+    stream = open(kMVA.__class__.__name__ + ".pkl", 'w')
+    pickle.dump(kMVA, stream)
     stream.close()
 
 def draw_mlpy_example(data, clabs, testData):
@@ -180,7 +181,7 @@ def main():
 #    kernel_func = polynomial_closure(2)
     print "median:", distance_prop(x, np.median)
     kernel_func = KernelRbf(distance_prop(x, np.median))
-    kMVA = kPLS(kernel_func)
+    kMVA = kOPLS(kernel_func)
     if args[0] == "--drawdata":
 #        kernel_func = partial(mlpy.kernel_gaussian, sigma=2.0)
         draw_data(x, y, kernel_func, testData)
