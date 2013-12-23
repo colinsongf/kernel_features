@@ -40,9 +40,9 @@ def draw_data(data, clabs, kernel_func, testData):
     vecs = vecs * norm_mat
     print 'mult:', vals[0] * vecs[:, 0].T * vecs[:, 0]
 
-    gK = mlpy.kernel_gaussian(data, data, sigma=2)
-    gaussian_pca = mlpy.KPCA(mlpy.KernelGaussian(2.0))
-    gaussian_pca.learn(data)
+#    gK = mlpy.kernel_gaussian(data, data, sigma=2)
+#    gaussian_pca = mlpy.KPCA(mlpy.KernelGaussian(2.0))
+#    gaussian_pca.learn(data)
 
     data_k_trans = np.real(Kx.T * vecs[:, :2])
     data_k_trans = np.array(data_k_trans)
@@ -60,19 +60,19 @@ def draw_data(data, clabs, kernel_func, testData):
     plt.show()
 
 def draw_kmva_obj(data, clabs, kMVA, testData):
-#    ax1 = plt.subplot(121)
-#    plot1 = plt.scatter(data[:, 0], data[:, 1], c=clabs)
-#    plot1_5 = plt.scatter(testData[:, 0], testData[:, 1])
+    ax1 = plt.subplot(121)
+    plot1 = plt.scatter(data[:, 0], data[:, 1], c=clabs)
+    plot1_5 = plt.scatter(testData[:, 0], testData[:, 1])
 
     kMVA.estim_kbasis(data, clabs)
     print kMVA.__class__.__name__ + " created"
-#    ax2 = plt.subplot(122)
+    ax2 = plt.subplot(122)
 
-#    data_k_trans = kMVA.transform(data, k=2)
-#    plot2 = plt.scatter(data_k_trans[:, 0], data_k_trans[:, 1], c=clabs)
+    data_k_trans = kMVA.transform(data, k=2)
+    plot2 = plt.scatter(data_k_trans[:, 0], data_k_trans[:, 1], c=clabs)
 
-#    kTransData = kMVA.transform(testData, 2)
-#    plot2_5 = plt.scatter(kTransData[:, 0], kTransData[:, 1])
+    kTransData = kMVA.transform(testData, 2)
+    plot2_5 = plt.scatter(kTransData[:, 0], kTransData[:, 1])
 
     plt.show()
 
@@ -179,8 +179,9 @@ def main():
     x, y = gen_train_data([(0, 50), (1, 50), (2, 50)])
     testData = gen_test_data()
 #    kernel_func = polynomial_closure(2)
-    print "median:", distance_prop(x, np.median)
-    kernel_func = KernelRbf(distance_prop(x, np.median))
+    sigma = 23.0#distance_prop(x, np.mean)
+    print "median:", sigma
+    kernel_func = KernelRbf(sigma)
     kMVA = kOPLS(kernel_func)
     if args[0] == "--drawdata":
 #        kernel_func = partial(mlpy.kernel_gaussian, sigma=2.0)

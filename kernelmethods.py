@@ -56,9 +56,10 @@ class kPCA(KernelMethod):
         Kx = np.mat([[self.kernel_func(np.array(xi), np.array(xj)) for xj in self.trData] for xi in self.trData])
         Kx = np.mat(mlpy.kernel_center(Kx, Kx))
         vals, vecs = np.linalg.eig(Kx)
+
         norm_mat = np.mat(np.diag([1.0/np.sqrt(vals[i]) for i in range(len(vals))]))
         self.vecs = vecs * norm_mat
-        print 'mult:', vals[0] * vecs[:, 0].T * vecs[:, 0]
+        print 'mult:', vals[0] * self.vecs[:, 0].T * self.vecs[:, 0]
     def transform(self, data, k=2):
         Kx = np.mat([[self.kernel_func(np.array(xi), np.array(xj)) for xj in self.trData] for xi in self.trData])
         Kt = np.mat([[self.kernel_func(np.array(xi), np.array(xj)) for xj in self.trData] for xi in data])
@@ -104,44 +105,39 @@ class kOPLS(KernelMethod):
         self.trData = trData
         self.vecs = []
         Y = one_of_c(labels)
-        print "rank Y", np.linalg.matrix_rank(Y)  
         Kx = np.mat([[self.kernel_func(np.array(xi), np.array(xj)) for xj in self.trData] for xi in self.trData])
-        Kx = np.mat(mlpy.kernel_center(Kx, Kx))
         self.Kx = Kx
-        Ky = Y * Y.T
-        print Y.shape, Ky.shape
-        print "Ky rankf", np.linalg.matrix_rank(Ky)
-        Ky = np.mat(mlpy.kernel_center(Ky, Ky))
-        for k in range(2):
+        Kx = np.mat(mlpy.kernel_center(Kx, Kx))
 
+        Ky = Y * Y.T
+        Ky = np.mat(mlpy.kernel_center(Ky, Ky))
 #        plt.imshow(Kx, cmap = cm.Greys_r)
 #        plt.show()
-            vals, vecs = eig(Kx*Ky*Kx, Kx*Kx)
-            vals = np.array([np.real(v) for v in vals])
-            alpha = vecs[:, vals.argmax()]
-            lamb = vals.max()
-            plt.plot(vals)
+        vals, vecs = eig(Kx*Ky*Kx, Kx*Kx)
 
-
-            alpha = np.mat(alpha).T
-            normTerm = (alpha.T * Kx) * (Kx * alpha)
-
-        #print 'mult before norm:', normTerm
-            alpha = alpha / np.sqrt(normTerm)
-            print 'mult after norm:', (alpha.T * Kx) * (Kx * alpha)
+        vals = np.array([np.real(v) for v in vals])
+        lambdas, alphas = zip(*sorted(zip(vals, vecs), reverse=True))
+        lamb = lambdas[0]
         
-            self.vecs.append(alpha)
-#        self.vecs = self.vecs * norm_mat
-            print np.linalg.matrix_rank(Kx*Ky*Kx)
-            Ky = Ky - lamb * (Kx * alpha) * (alpha.T * Kx)
-            print np.linalg.matrix_rank(Kx*Ky*Kx)
+#        plt.plot(lambdas)
 
-        plt.show()
+#        normTerm = (alpha.T * Kx) * (Kx * alpha)
+#        alpha = np.mat(vecs[:, 3]).T
+#        print 'mult before norm:', 1.0 / ((alpha.T * Kx) * (Kx * alpha))
+
+        norm_mat = np.mat(np.diag([1.0/np.sqrt(((np.mat(vecs[:, i]) * Kx) * (Kx * np.mat(vecs[:, i]).T))[0,0]) for i in range(len(vals))]))
+        vecs = vecs * norm_mat
+        alpha = np.mat(vecs[:, 3])
+#        alpha = alpha / np.sqrt(normTerm)
+        print 'mult after norm:', (alpha.T * Kx) * (Kx * alpha)
+        
+        self.vecs = vecs
+#        self.vecs = self.vecs * norm_mat
+#        plt.show()
 
     def transform(self, data, k=2):
-        Kx = np.mat([[self.kernel_func(np.array(xi), np.array(xj)) for xj in self.trData] for xi in self.trData])
         Kt = np.mat([[self.kernel_func(np.array(xi), np.array(xj)) for xj in self.trData] for xi in data])
-        Kt = np.mat(mlpy.kernel_center(Kt, Kx))
+        Kt = np.mat(mlpy.kernel_center(Kt, self.Kx))
         kTransTestData = np.real(Kt * self.vecs[:, :k])
         return np.array(kTransTestData)
 
