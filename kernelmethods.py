@@ -1,7 +1,7 @@
 #! usr/bin/python
 
 import numpy as np
-import mlpy, pylab
+import mlpy, pylab, random 
 import matplotlib.pyplot as plt
 import matplotlib.cm as cm
 from scipy.linalg import eig
@@ -101,21 +101,35 @@ class kPLS(KernelMethod):
         return np.array(kTransTestData)
 
 class kOPLS(KernelMethod):
-    def estim_kbasis(self, trData, labels):
+    def estim_kbasis(self, trData, labels, regParam):
         self.trData = trData
-        self.vecs = []
+        subSetInds = []
+        while len(set(subSetInds)) < regParam: subSetInds.append(int(random.uniform(0, len(trData))))
+        subSetInds = sorted(list(set(subSetInds)))
+#        subSetInds = sorted(random.sample(xrange(0, 50), 25))
+#        subSetInds.extend(sorted(random.sample(xrange(51, 100), 25)))
+#        subSetInds.extend(sorted(random.sample(xrange(101, 150), 25)))
+        f = open('inds.mat', 'w')
+        f.write('\n'.join([str(i) for i in subSetInds]))
+        f.close()
+
+        self.trDataSubset = np.array([trData[i] for i in subSetInds])
+        
         Y = one_of_c(labels)
-        Kx = np.mat([[self.kernel_func(np.array(xi), np.array(xj)) for xj in self.trData] for xi in self.trData])
+        Kx = np.mat([[self.kernel_func(np.array(xi), np.array(xj)) for xj in self.trData] for xi in self.trDataSubset])
         self.Kx = Kx
+        print self.Kx.shape
         Kx = np.mat(mlpy.kernel_center(Kx, Kx))
 
         Ky = Y * Y.T
         Ky = np.mat(mlpy.kernel_center(Ky, Ky))
 #        plt.imshow(Kx, cmap = cm.Greys_r)
 #        plt.show()
-        vals, vecs = eig(Kx*Ky*Kx, Kx*Kx)
+        vals, vecs = eig(Kx*Ky*Kx.T, Kx*Kx.T)
 
         vals = np.array([np.real(v) for v in vals])
+#        plt.plot(vals)
+#        plt.show()
         lambdas, alphas = zip(*sorted(zip(vals, vecs), reverse=True))
         lamb = lambdas[0]
         
@@ -125,19 +139,19 @@ class kOPLS(KernelMethod):
 #        alpha = np.mat(vecs[:, 3]).T
 #        print 'mult before norm:', 1.0 / ((alpha.T * Kx) * (Kx * alpha))
 
-        norm_mat = np.mat(np.diag([1.0/np.sqrt(((np.mat(vecs[:, i]) * Kx) * (Kx * np.mat(vecs[:, i]).T))[0,0]) for i in range(len(vals))]))
+        norm_mat = np.mat(np.diag([1.0/np.sqrt(((np.mat(vecs[:, i]) * Kx) * (Kx.T * np.mat(vecs[:, i]).T))[0,0]) for i in range(len(vals))]))
         vecs = vecs * norm_mat
         alpha = np.mat(vecs[:, 3])
 #        alpha = alpha / np.sqrt(normTerm)
-        print 'mult after norm:', (alpha.T * Kx) * (Kx * alpha)
+        print 'mult after norm:', (alpha.T * Kx) * (Kx.T * alpha)
         
         self.vecs = vecs
 #        self.vecs = self.vecs * norm_mat
 #        plt.show()
 
     def transform(self, data, k=2):
-        Kt = np.mat([[self.kernel_func(np.array(xi), np.array(xj)) for xj in self.trData] for xi in data])
-        Kt = np.mat(mlpy.kernel_center(Kt, self.Kx))
+        Kt = np.mat([[self.kernel_func(np.array(xi), np.array(xj)) for xj in self.trDataSubset] for xi in data])
+        Kt = np.mat(mlpy.kernel_center(Kt, self.Kx.T))
         kTransTestData = np.real(Kt * self.vecs[:, :k])
         return np.array(kTransTestData)
 

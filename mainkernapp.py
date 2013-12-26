@@ -64,7 +64,7 @@ def draw_kmva_obj(data, clabs, kMVA, testData):
     plot1 = plt.scatter(data[:, 0], data[:, 1], c=clabs)
     plot1_5 = plt.scatter(testData[:, 0], testData[:, 1])
 
-    kMVA.estim_kbasis(data, clabs)
+    kMVA.estim_kbasis(data, clabs, int(len(data) * 0.5))
     print kMVA.__class__.__name__ + " created"
     ax2 = plt.subplot(122)
 
@@ -179,7 +179,8 @@ def main():
     x, y = gen_train_data([(0, 50), (1, 50), (2, 50)])
     testData = gen_test_data()
 #    kernel_func = polynomial_closure(2)
-    sigma = 23.0#distance_prop(x, np.mean)
+
+    sigma = 20.0#distance_prop(x, np.mean)
     print "median:", sigma
     kernel_func = KernelRbf(sigma)
     kMVA = kOPLS(kernel_func)
