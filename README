@@ -1,1 +1,4 @@
 This project is created for the experiments on kernel methods.
+
+Requirements:
+python-mlpy python-scipy python-numpy GHMM python-PyMix python-ply

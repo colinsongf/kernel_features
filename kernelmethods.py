@@ -106,9 +106,7 @@ class kOPLS(KernelMethod):
         subSetInds = []
         while len(set(subSetInds)) < regParam: subSetInds.append(int(random.uniform(0, len(trData))))
         subSetInds = sorted(list(set(subSetInds)))
-#        subSetInds = sorted(random.sample(xrange(0, 50), 25))
-#        subSetInds.extend(sorted(random.sample(xrange(51, 100), 25)))
-#        subSetInds.extend(sorted(random.sample(xrange(101, 150), 25)))
+
         f = open('inds.mat', 'w')
         f.write('\n'.join([str(i) for i in subSetInds]))
         f.close()
@@ -130,22 +128,26 @@ class kOPLS(KernelMethod):
         vals = np.array([np.real(v) for v in vals])
 #        plt.plot(vals)
 #        plt.show()
+        vecs = vecs.T
         lambdas, alphas = zip(*sorted(zip(vals, vecs), reverse=True))
-        lamb = lambdas[0]
-        
+
+        lambdas = np.array([l for l in lambdas])
+        alphas = np.mat([col for col in alphas])
+        print "alphas.shape:", alphas.shape
+        alphas = alphas.T
 #        plt.plot(lambdas)
 
 #        normTerm = (alpha.T * Kx) * (Kx * alpha)
 #        alpha = np.mat(vecs[:, 3]).T
 #        print 'mult before norm:', 1.0 / ((alpha.T * Kx) * (Kx * alpha))
 
-        norm_mat = np.mat(np.diag([1.0/np.sqrt(((np.mat(vecs[:, i]) * Kx) * (Kx.T * np.mat(vecs[:, i]).T))[0,0]) for i in range(len(vals))]))
-        vecs = vecs * norm_mat
-        alpha = np.mat(vecs[:, 3])
+        norm_mat = np.mat(np.diag([1.0/np.sqrt(((alphas[:, i].T * Kx) * (Kx.T * alphas[:, i]))[0,0]) for i in range(len(lambdas))]))
+        alphas = alphas * norm_mat
+        alpha = np.mat(alphas[:, 3])
 #        alpha = alpha / np.sqrt(normTerm)
         print 'mult after norm:', (alpha.T * Kx) * (Kx.T * alpha)
         
-        self.vecs = vecs
+        self.vecs = alphas
 #        self.vecs = self.vecs * norm_mat
 #        plt.show()
 
