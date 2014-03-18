@@ -181,7 +181,7 @@ def main():
 #    kernel_func = polynomial_closure(2)
 
     print "median:", distance_prop(x, np.median)
-    sigma = 20.0
+    sigma = 50.0
     print "sigma:", sigma
     kernel_func = KernelRbf(sigma)
     kMVA = kOPLS(kernel_func)

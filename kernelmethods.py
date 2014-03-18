@@ -4,7 +4,7 @@ import numpy as np
 import mlpy, pylab, random 
 import matplotlib.pyplot as plt
 import matplotlib.cm as cm
-from scipy.linalg import eig
+from scipy.linalg import eig, eigh
 from itertools import combinations
 
 def distance_prop(data, prop=np.mean):
@@ -118,28 +118,34 @@ class kOPLS(KernelMethod):
 
         Ky = Y * Y.T
         Ky = np.mat(mlpy.kernel_center(Ky, Ky))
+        meval = min(np.real(np.linalg.eigvals(Kx * Kx.T)))
+        KxKxT = Kx * Kx.T - 10 * meval * np.identity(Kx.shape[0])
+        print "KxKxT is simmetric:", np.allclose(KxKxT, (KxKxT).T)
+        def is_pos_def(x):
+            return np.all(np.linalg.eigvals(x) > 0)
+        print "KxKxT is positive definite:", is_pos_def(KxKxT)
+
 #        plt.imshow(Kx, cmap = cm.Greys_r)
 #        plt.show()
-        vals, vecs = eig(Kx*Ky*Kx.T, Kx*Kx.T)
+        vals, vecs = eigh(Kx*Ky*Kx.T, KxKxT)
 
         vals = np.array([np.real(v) for v in vals])
+        print vals        
 #        plt.plot(vals)
 #        plt.show()
-        vecs = vecs.T
+#        vecs = vecs.T
 #        lambdas, alphas = zip(*sorted(zip(vals, vecs), reverse=True))
 #        lambdas = np.array([l for l in lambdas])
 #        alphas = np.mat([col for col in alphas])
 
-        args = vals.argsort(axis = 0)
-        alphas = np.mat(vecs[list(reversed(args))])
-        alphas = alphas.T
-        lambdas = sorted(vals, reverse=True)
-
-        f = open('sorted.chk', 'w')
-        f.write('\n'.join([str(el) for el in zip(lambdas[:3], alphas[:3, :10])]))
-        f.close()
-
-
+#        args = vals.argsort(axis = 0)
+#        alphas = np.mat(vecs[list(reversed(args))])
+#        alphas = alphas.T
+#        lambdas = sorted(vals, reverse=True)
+        
+        lambdas = vals
+        alphas = np.mat(vecs)
+        print type(lambdas), type(alphas)
 #        plt.plot(lambdas)
 
 #        normTerm = (alpha.T * Kx) * (Kx * alpha)
@@ -148,7 +154,7 @@ class kOPLS(KernelMethod):
 
         norm_mat = np.mat(np.diag([1.0/np.sqrt(((alphas[:, i].T * Kx) * (Kx.T * alphas[:, i]))[0,0]) for i in range(len(lambdas))]))
         alphas = alphas * norm_mat
-        alpha = np.mat(alphas[:, 3])
+        alpha = np.mat(alphas[:, 44])
 #        alpha = alpha / np.sqrt(normTerm)
         print 'mult after norm:', (alpha.T * Kx) * (Kx.T * alpha)
         
@@ -159,7 +165,7 @@ class kOPLS(KernelMethod):
     def transform(self, data, k=2):
         Kt = np.mat([[self.kernel_func(np.array(xi), np.array(xj)) for xj in self.trDataSubset] for xi in data])
         Kt = np.mat(mlpy.kernel_center(Kt, self.Kx.T))
-        kTransTestData = np.real(Kt * self.vecs[:, :k])
+        kTransTestData = np.real(Kt * self.vecs[:, -k:])
         return np.array(kTransTestData)
 
 
