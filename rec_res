@@ -98,3 +98,11 @@ hmm classification mfcc
 phoneme accuracy: 0.874882408278
 train: Word_1 -- Word_44, Str_1 -- Str_10 (398 samples)
 test:  Str_11 -- Str_100 (1063 samples)
+
+hmm classification mfcc
+['a', 'i', 'k', 'n', 'o', 'r', 's', 't', 'v']
+median: 4.91073163595
+sigma: 12.2768290899
+phoneme accuracy: 0.836683417085
+train: Word_1 -- Word_44, Str_1 -- Str_10 (398 samples)
+test:  Word_1 -- Word_44, Str_1 -- Str_10 (398 samples)

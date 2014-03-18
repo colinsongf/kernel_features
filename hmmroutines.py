@@ -89,6 +89,7 @@ class HMMClassifier(object):
     def load(self, hmmDefFileList, pathToHmm='recsystem/hmm'):
         for hmmDeffn in hmmDefFileList:
             ph = os.path.basename(hmmDeffn)
+            #print os.path.join(pathToHmm, hmmDeffn)
             self.modelsDict[ph] = hmm_built_from(HmmFromGHMMBuilder, os.path.join(pathToHmm, hmmDeffn))
 
     def refine_cov_matrix(self, threshold=0.5):

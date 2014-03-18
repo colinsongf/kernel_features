@@ -29,7 +29,7 @@ def gen_train_data(clTotals):
 
 def gen_test_data():
     tSamplesTotal = 50
-    return gen_circle_data(3, tSamplesTotal)
+    return gen_circle_data(4.9, tSamplesTotal)
 
 def phoneme_dict(paramDBPath, labDBPath, recSysDir):
     pfr = HTKParamPhonemeReader()

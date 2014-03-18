@@ -107,9 +107,6 @@ class kOPLS(KernelMethod):
         while len(set(subSetInds)) < regParam: subSetInds.append(int(random.uniform(0, len(trData))))
         subSetInds = sorted(list(set(subSetInds)))
 
-        f = open('inds.mat', 'w')
-        f.write('\n'.join([str(i) for i in subSetInds]))
-        f.close()
 
         self.trDataSubset = np.array([trData[i] for i in subSetInds])
         
@@ -129,12 +126,20 @@ class kOPLS(KernelMethod):
 #        plt.plot(vals)
 #        plt.show()
         vecs = vecs.T
-        lambdas, alphas = zip(*sorted(zip(vals, vecs), reverse=True))
+#        lambdas, alphas = zip(*sorted(zip(vals, vecs), reverse=True))
+#        lambdas = np.array([l for l in lambdas])
+#        alphas = np.mat([col for col in alphas])
 
-        lambdas = np.array([l for l in lambdas])
-        alphas = np.mat([col for col in alphas])
-        print "alphas.shape:", alphas.shape
+        args = vals.argsort(axis = 0)
+        alphas = np.mat(vecs[list(reversed(args))])
         alphas = alphas.T
+        lambdas = sorted(vals, reverse=True)
+
+        f = open('sorted.chk', 'w')
+        f.write('\n'.join([str(el) for el in zip(lambdas[:3], alphas[:3, :10])]))
+        f.close()
+
+
 #        plt.plot(lambdas)
 
 #        normTerm = (alpha.T * Kx) * (Kx * alpha)

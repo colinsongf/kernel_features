@@ -6,5 +6,6 @@ octave/
 *.pyc
 *~
 *.pkl
+*.chk
 \#*
 .\#*

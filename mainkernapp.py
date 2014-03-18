@@ -62,9 +62,9 @@ def draw_data(data, clabs, kernel_func, testData):
 def draw_kmva_obj(data, clabs, kMVA, testData):
     ax1 = plt.subplot(121)
     plot1 = plt.scatter(data[:, 0], data[:, 1], c=clabs)
-    plot1_5 = plt.scatter(testData[:, 0], testData[:, 1])
+    plot1_5 = plt.scatter(testData[:, 0], testData[:, 1], color='0.5')
 
-    kMVA.estim_kbasis(data, clabs, int(len(data) * 0.5))
+    kMVA.estim_kbasis(data, clabs, int(len(data) * 0.3))
     print kMVA.__class__.__name__ + " created"
     ax2 = plt.subplot(122)
 
@@ -147,8 +147,8 @@ def apply_hmm_to_phonemes(trPhData, testPhData):
     print len(train), len(trTarget)
 
     hmmcl = HMMClassifier(nStates=3, nMix=1)
-    hmmcl.train(train, trTarget)
-    #hmmcl.load(phData.keys())
+    #hmmcl.train(train, trTarget)
+    hmmcl.load(trPhData.keys(), pathToHmm="recsystem/kOPLS/hmm")
     hmmcl.refine_cov_matrix()
     print len(hmmcl.modelsDict)
 
@@ -180,8 +180,9 @@ def main():
     testData = gen_test_data()
 #    kernel_func = polynomial_closure(2)
 
-    sigma = 20.0#distance_prop(x, np.mean)
-    print "median:", sigma
+    print "median:", distance_prop(x, np.median)
+    sigma = 20.0
+    print "sigma:", sigma
     kernel_func = KernelRbf(sigma)
     kMVA = kOPLS(kernel_func)
     if args[0] == "--drawdata":
