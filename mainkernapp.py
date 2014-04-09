@@ -148,8 +148,8 @@ def apply_hmm_to_phonemes(trPhData, testPhData):
 
     hmmcl = HMMClassifier(nStates=3, nMix=1)
     #hmmcl.train(train, trTarget)
-    hmmcl.load(trPhData.keys(), pathToHmm="recsystem/kOPLS/hmm")
-    hmmcl.refine_cov_matrix()
+    hmmcl.load(trPhData.keys(), pathToHmm="recsystem/kOPLS/hmm/full")
+#    hmmcl.refine_cov_matrix()
     print len(hmmcl.modelsDict)
 
     test = []
@@ -158,7 +158,7 @@ def apply_hmm_to_phonemes(trPhData, testPhData):
         test += testPhData[ph]
         testTarget += [ph] * len(testPhData[ph])
 
-    print len(train), len(testTarget)
+    print len(test), len(testTarget)
 
     predRes = hmmcl.predict(test)
     print sum([1 if t == p else 0 for t, p in zip(testTarget, predRes)]) / float(len(testTarget))

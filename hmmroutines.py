@@ -3,7 +3,7 @@ import ghmm, os
 
 import sys
 sys.path.append("/home/kuzaleks/Projects/NetBeansProjects/viterby_algorithm/src")
-from hmmbuilder import HMMFromGHMMConverter, hmm_built_from, HmmFromGHMMBuilder, HmmFromHTKBuilder
+from hmmbuilder import HMMFromGHMMConverter, hmm_built_from, HmmFromGHMMBuilder, HmmFromHTKBuilder, HmmFromDiagHTKBuilder
 
 
 
@@ -107,6 +107,7 @@ class HMMClassifier(object):
     def predict(self, testData):
         seq_set = ghmm.SequenceSet(ghmm.Float(), [sum(phSeq, []) for phSeq in testData])
         res = []
+#        print "seq len =", len(seq_set[0])
         for seq in seq_set:
             loglikelihoods = [(model, self.modelsDict[model].loglikelihood(seq)) for model in self.modelsDict]
             res.append(max(loglikelihoods, key=lambda el: el[1])[0])
