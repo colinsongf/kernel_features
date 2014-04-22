@@ -106,3 +106,18 @@ sigma: 12.2768290899
 phoneme accuracy: 0.836683417085
 train: Word_1 -- Word_44, Str_1 -- Str_10 (398 samples)
 test:  Word_1 -- Word_44, Str_1 -- Str_10 (398 samples)
+
+hmm classification mfcc+kopls*
+['a', 'i', 'k', 'n', 'r', 's', 'v']
+median: 4.90698770292
+sigma: 4.90698770292
+phoneme accuracy: 0.830336200156
+train_kernal: Word_1 -- Word_44, Str_1 -- Str_10 (398 samples)
+train: Word_1 -- Word_44, Str_1 -- Str_150, S_0 -- S_70, SExt_0 -- SExt_70 (4026 samples)
+test:  Tr_1 -- Tr_150 (2558 samples)
+
+hmm classification mfcc
+['a', 'i', 'k', 'n', 'r', 's', 'v']
+phoneme accuracy: 0.951524628616
+train: Word_1 -- Word_44, Str_1 -- Str_150, S_0 -- S_70, SExt_0 -- SExt_70 (4026 samples)
+test:  Tr_1 -- Tr_150 (2558 samples)

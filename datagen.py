@@ -3,9 +3,13 @@
 import sys, os, yaml
 import numpy as np
 
-sys.path.append("/home/kuzaleks/Projects/NetBeansProjects/viterby_algorithm/src")
-from param_file_routines import HTKParamPhonemeReader, SampleCollector
+vitProjPath = "/home/kuzaleks/Projects/NetBeansProjects/viterby_algorithm/src"
+sfeProjPath = "/home/kuzaleks/Projects/NetBeansProjects/signal_feature_experiment/src"
+sys.path.append(vitProjPath)
+sys.path.append(sfeProjPath)
 
+from param_file_routines import HTKParamPhonemeReader, SampleCollector
+from kernelrout import all_samples
 
 def gen_circle_data(radAve, total):
     np.random.seed(0)
@@ -31,9 +35,9 @@ def gen_test_data():
     tSamplesTotal = 50
     return gen_circle_data(4.9, tSamplesTotal)
 
-def phoneme_dict(paramDBPath, labDBPath, recSysDir):
+def phoneme_dict(paramDBPath, labDBPath, recSysDir, phFileName='monophones.yaml'):
     pfr = HTKParamPhonemeReader()
-    f = open(os.path.join(recSysDir, 'monophones.yaml'))
+    f = open(os.path.join(recSysDir, phFileName))
     monophones = yaml.load(f)
     f.close()
 
@@ -44,3 +48,13 @@ def phoneme_dict(paramDBPath, labDBPath, recSysDir):
         sc.store_corpus(ph, paramDBPath, labDBPath)
         samples[ph] = sc.corpus[:]
     return samples
+
+def get_kernel_data():
+    """
+    returns original data median and sigma of the Gaussian kernel
+    based on it
+    """
+    f = open(os.path.join(sfeProjPath, "recsystem", "median_sigma.yaml"))
+    msDict = yaml.load(f)
+    f.close()
+    return msDict['median'], msDict['sigma']

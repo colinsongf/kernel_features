@@ -1,16 +1,24 @@
 #! /usr/bin/python
 
+"""
+
+./mainkernapp.py --applyphhmm recsystem/mfcc/train/ recsystem/mfcc/test recsystem/train_labs (change recsystem/<feature_vector_name>/hmm/full)
+
+./mainkernapp.py --custkmva
+
+"""
+
 import sys, os
 
 import numpy as np
-import numpy, pickle
+import numpy, pickle, mlpy, yaml, ghmm
 import matplotlib.pyplot as plt
 import matplotlib.cm as cm
-import mlpy
+from persist import MongoPreserver
 from functools import partial
 from kernelmethods import kPCA, kPLS, kOPLS, polynomial_closure, rbf_closure, KernelRbf, distance_prop
-from datagen import gen_train_data, gen_test_data, phoneme_dict
-import yaml, pickle, ghmm
+from datagen import gen_train_data, gen_test_data, phoneme_dict, all_samples, \
+    get_kernel_data
 from vistools import plotGHMMEmiss
 from hmmroutines import init_hmm, HMMClassifier, HMMFromGHMMConverter, hmm_built_from, \
     HmmFromGHMMBuilder, HmmFromHTKBuilder
@@ -135,7 +143,7 @@ def check_particular_phoneme(phData):
 #    print len(seq), hmm.loglikelihood(seq), hmm.viterbi(seq)
 
 
-def apply_hmm_to_phonemes(trPhData, testPhData):
+def phoneme_rec_accuracy_hmm(trPhData, testPhData, debug=False):
     syspath = 'recsystem'
     
     train = []
@@ -148,7 +156,7 @@ def apply_hmm_to_phonemes(trPhData, testPhData):
 
     hmmcl = HMMClassifier(nStates=3, nMix=1)
     #hmmcl.train(train, trTarget)
-    hmmcl.load(trPhData.keys(), pathToHmm="recsystem/kOPLS/hmm/full")
+    hmmcl.load(trPhData.keys(), pathToHmm="recsystem/mfcc/hmm/full")
 #    hmmcl.refine_cov_matrix()
     print len(hmmcl.modelsDict)
 
@@ -161,11 +169,13 @@ def apply_hmm_to_phonemes(trPhData, testPhData):
     print len(test), len(testTarget)
 
     predRes = hmmcl.predict(test)
-    print sum([1 if t == p else 0 for t, p in zip(testTarget, predRes)]) / float(len(testTarget))
 
-    f = open('results', 'w')
-    yaml.dump(zip(testTarget, predRes), f, default_flow_style=False)
-    f.close()
+    if debug:
+        f = open('results', 'w')
+        yaml.dump(zip(testTarget, predRes), f, default_flow_style=False)
+        f.close()
+
+    return sum([1 if t == p else 0 for t, p in zip(testTarget, predRes)]) / float(len(testTarget))
 
 
 def main():
@@ -196,17 +206,35 @@ def main():
     elif args[0] == "--applyphhmm":
         if len(args) == 4:
             trDir, testDir, labDir = args[1:]
-            trSamples = phoneme_dict(trDir, labDir, recSysDir)
-            print 'len(trSamples) =', len(trSamples)
+            phFileName = 'monophones.yaml'
+            trSamples = phoneme_dict(trDir, labDir, recSysDir, phFileName)
             for smpl in trSamples:
                 print smpl, ': ', len(trSamples[smpl]), np.mean([len(phSmpl) for phSmpl in trSamples[smpl]])
-
-            testSamples = phoneme_dict(testDir, labDir, recSysDir)
-            print 'len(testSamples) =', len(testSamples)
+            testSamples = phoneme_dict(testDir, labDir, recSysDir, phFileName)
             for smpl in testSamples:
                 print smpl, ': ', len(testSamples[smpl]), np.mean([len(phSmpl) for phSmpl in testSamples[smpl]])
+                
+            phAcc = phoneme_rec_accuracy_hmm(trSamples, testSamples)
 
-            apply_hmm_to_phonemes(trSamples, testSamples)
+            trLen = sum([len(trSamples[ph]) for ph in trSamples])
+            testLen = sum([len(testSamples[ph]) for ph in testSamples])
+
+            recResEntry = {}
+            recResEntry['features'] = 'mfcc_kopls'
+            recResEntry['accuracy'] = phAcc
+            recResEntry['trainvol'] = trLen
+            recResEntry['testvol'] = testLen
+            f = open(os.path.join(recSysDir, phFileName))
+            monophones = yaml.load(f)
+            f.close()
+            recResEntry['phonemes'] = monophones
+            recResEntry['median'], recResEntry['sigma'] = get_kernel_data()
+
+            print recResEntry
+            saveToDB = False
+            if saveToDB:
+                pres = MongoPreserver()
+                pres.persist(recResEntry)
         else:
             print "--applyphhmm paramdbpath labdbpath"
     else:
