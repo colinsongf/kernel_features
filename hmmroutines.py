@@ -1,10 +1,10 @@
 import numpy as np
 import ghmm, os
 
-import sys
+import sys, re
 sys.path.append("/home/kuzaleks/Projects/NetBeansProjects/viterby_algorithm/src")
-from hmmbuilder import HMMFromGHMMConverter, hmm_built_from, HmmFromGHMMBuilder, HmmFromHTKBuilder, HmmFromDiagHTKBuilder
-
+from hmmbuilder import HMMFromGHMMConverter, hmm_built_from, HmmFromGHMMBuilder, HmmFromHTKBuilder, HmmFromDiagHTKBuilder, GHmmFromDiagHTKBuilder
+from htkexcpts import HMMDefFileException
 
 
 def init_toy_hmm():
@@ -70,6 +70,7 @@ class HHMSphericalInitializer(HMMInitializer):
 
         return ghmm.HMMFromMatrices(account,ghmm.MultivariateGaussianDistribution(account), transMatr, stParams, pi)
 
+
 class HMMClassifier(object):
     def __init__(self, nStates, nMix):
         self.nStates = nStates
@@ -90,24 +91,27 @@ class HMMClassifier(object):
         for hmmDeffn in hmmDefFileList:
             ph = os.path.basename(hmmDeffn)
             #print os.path.join(pathToHmm, hmmDeffn)
-            self.modelsDict[ph] = hmm_built_from(HmmFromGHMMBuilder, os.path.join(pathToHmm, hmmDeffn))
+            hmmFullPath = os.path.join(pathToHmm, hmmDeffn)
+            f = open(hmmFullPath)
+            fileContent = f.read()
+            f.close()
+            matchFull = re.search("INVCOVAR", fileContent)
+            matchDiag = re.search("VARIANCE", fileContent)
+            if matchFull:
+                self.modelsDict[ph] = hmm_built_from(HmmFromGHMMBuilder, hmmFullPath)
+            elif matchDiag:
+                self.modelsDict[ph] = hmm_built_from(GHmmFromDiagHTKBuilder, hmmFullPath)
+            else:
+                raise HMMDefFileException(hmmDeffn)
 
     def refine_cov_matrix(self, threshold=0.5):
-#        newSigma = [(threshold if i % (self.dim+1) == 0 else 0.0) for i in range(self.dim*self.dim)]
-        
         for ph in self.modelsDict:
-#            for stInd in range(self.modelsDict[ph].N):
-#                mu, sigma = self.modelsDict[ph].getEmission(stInd, 0)
-#                stateParam = [mu, newSigma]
-#                self.modelsDict[ph].setEmission(stInd, 0, stateParam)
-#            self.modelsDict[ph].normalize()
             self.modelsDict[ph] = HMMClassifier.reassigned_ghmm_object(self.modelsDict[ph], threshold)
 
 
     def predict(self, testData):
         seq_set = ghmm.SequenceSet(ghmm.Float(), [sum(phSeq, []) for phSeq in testData])
         res = []
-#        print "seq len =", len(seq_set[0])
         for seq in seq_set:
             loglikelihoods = [(model, self.modelsDict[model].loglikelihood(seq)) for model in self.modelsDict]
             res.append(max(loglikelihoods, key=lambda el: el[1])[0])

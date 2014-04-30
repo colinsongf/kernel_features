@@ -156,7 +156,7 @@ def phoneme_rec_accuracy_hmm(trPhData, testPhData, debug=False):
 
     hmmcl = HMMClassifier(nStates=3, nMix=1)
     #hmmcl.train(train, trTarget)
-    hmmcl.load(trPhData.keys(), pathToHmm="recsystem/mfcc/hmm/full")
+    hmmcl.load(trPhData.keys(), pathToHmm="recsystem/kOPLS/hmm/diag")
 #    hmmcl.refine_cov_matrix()
     print len(hmmcl.modelsDict)
 
@@ -221,6 +221,7 @@ def main():
 
             recResEntry = {}
             recResEntry['features'] = 'mfcc_kopls'
+            recResEntry['covtype'] = 'diag'
             recResEntry['accuracy'] = phAcc
             recResEntry['trainvol'] = trLen
             recResEntry['testvol'] = testLen
@@ -231,7 +232,7 @@ def main():
             recResEntry['median'], recResEntry['sigma'] = get_kernel_data()
 
             print recResEntry
-            saveToDB = False
+            saveToDB = True
             if saveToDB:
                 pres = MongoPreserver()
                 pres.persist(recResEntry)
