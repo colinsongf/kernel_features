@@ -42,6 +42,23 @@ def init_hmm(nStates, nMix, dim):
 
     return ghmm.HMMFromMatrices(account,ghmm.MultivariateGaussianDistribution(account), transMatr, stParams, pi)
         
+def covmatr_type(hmmDefFile):
+    """
+    returns 'diag', 'full' or 'unknown' depending on what kind of
+    covarience matrix is defined in HTK HMM definition file hmmDefFile
+    """
+    f = open(hmmDefFile)
+    fileContent = f.read()
+    f.close()
+    matchFull = re.search("INVCOVAR", fileContent)
+    matchDiag = re.search("VARIANCE", fileContent)
+    if matchFull:
+        return "full"
+    elif matchDiag:
+        return "diag"
+    else:
+        return "unknown"
+    
 
 
 class HMMInitializer(object):
