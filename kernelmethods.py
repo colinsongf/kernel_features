@@ -7,6 +7,27 @@ import matplotlib.cm as cm
 from scipy.linalg import eig, eigh
 from itertools import combinations
 
+def centered_kernel_matrix(Kt, KSub):
+    """
+    Center samples in the Reproduced Hilbert Space in Kt() on training kernel
+    matrix KSub
+    Kt = np.random.rand(testTot, trTot)
+    KSub = np.random.rand(trTot, trTot)
+    """
+    assert Kt.shape[1] == KSub.shape[0]
+    # Kt.shape = (10, 2), KSub.shape = (2, 4)
+    trTotSub = KSub.shape[0]
+    trTot = KSub.shape[1]
+    KtMan = np.zeros(Kt.shape)
+    for i in range(KtMan.shape[0]):
+        for j in range(KtMan.shape[1]):
+            KtOne = sum(Kt[i, :])
+            oneK = sum(KSub.T[:, j])
+            sumsumK = sum(sum(KSub))
+            KtMan[i, j] = Kt[i, j] - (1.0/trTotSub) * KtOne - (1.0/trTot) * oneK + (1.0 / (trTotSub * trTot)) * sumsumK
+    return KtMan
+                
+
 def distance_prop(data, prop=np.mean):
     return prop([np.linalg.norm(np.array(x) - np.array(y)) for x, y in combinations(data, 2)])
 
