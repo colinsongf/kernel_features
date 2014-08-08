@@ -1,14 +1,15 @@
 #! usr/bin/python
 
-import sys, os, yaml
+import sys, os, yaml, json
 import numpy as np
 
 vitProjPath = "/home/kuzaleks/Projects/NetBeansProjects/viterby_algorithm/src"
-sfeProjPath = "/home/kuzaleks/Projects/NetBeansProjects/signal_feature_experiment/src"
+#sfeProjPath = "/home/kuzaleks/Projects/NetBeansProjects/signal_feature_experiment/src"
 sys.path.append(vitProjPath)
-sys.path.append(sfeProjPath)
+#sys.path.append(sfeProjPath)
 
 from param_file_routines import HTKParamPhonemeReader, SampleCollector
+from labmanip import labs_dict_from_file, labs_dict_from_db
 from kernelrout import all_samples
 
 def gen_circle_data(radAve, total):
@@ -35,17 +36,29 @@ def gen_test_data():
     tSamplesTotal = 50
     return gen_circle_data(4.9, tSamplesTotal)
 
-def phoneme_dict(paramDBPath, labDBPath, recSysDir, phFileName='monophones.yaml'):
+def phoneme_dict(paramDBPath, recSysDir, labsfn="", phsfn='monophones_full.json', verbose=False):
     pfr = HTKParamPhonemeReader()
-    f = open(os.path.join(recSysDir, phFileName))
-    monophones = yaml.load(f)
+    f = open(os.path.join(recSysDir, phsfn))
+    monophones = json.load(f)
     f.close()
 
-    print monophones
+    if verbose:
+        print 'Before:', monophones
+    monophones = [ph for ph in monophones if not ph == 'sil']
+    if verbose:
+        print 'After:', monophones
+
+    if (labsfn):
+        labsDictReader = partial(labs_dict_from_file, os.path.join(recSysDir, labsfn))
+    else:
+        labsDictReader = labs_dict_from_db
+
+    labsDict = labsDictReader()
+
     samples = {}
     sc = SampleCollector(pfr)
     for ph in monophones:
-        sc.store_corpus(ph, paramDBPath, labDBPath)
+        sc.store_corpus(ph, paramDBPath, labsDict)
         samples[ph] = sc.corpus[:]
     return samples
 

@@ -204,15 +204,22 @@ def main():
     elif args[0] == "--applyhmm":
         apply_hmm(x, y, kMVA)
     elif args[0] == "--applyphhmm":
-        if len(args) == 5:
-            hmmDir, trDir, testDir, labDir = args[1:]
-            phFileName = 'monophones.yaml'
-            trSamples = phoneme_dict(trDir, labDir, recSysDir, phFileName)
-            for smpl in trSamples:
-                print smpl, ': ', len(trSamples[smpl]), np.mean([len(phSmpl) for phSmpl in trSamples[smpl]])
-            testSamples = phoneme_dict(testDir, labDir, recSysDir, phFileName)
-            for smpl in testSamples:
-                print smpl, ': ', len(testSamples[smpl]), np.mean([len(phSmpl) for phSmpl in testSamples[smpl]])
+        if len(args) == 5 or len(args) == 4:
+            if len(args) == 5:
+                hmmDir, trDir, testDir, labfn = args[1:]
+            else:
+                hmmDir, trDir, testDir = args[1:]
+            phFileName = 'monophones_full.json'
+            trSamples = phoneme_dict(trDir, recSysDir, labsfn="", phsfn=phFileName)
+            if verbose:
+                for smpl in trSamples:
+                    print smpl, ': ', len(trSamples[smpl]), \
+                          np.mean([len(phSmpl) for phSmpl in trSamples[smpl]])
+            testSamples = phoneme_dict(testDir, recSysDir, labsfn="", phsfn=phFileName)
+            if verbose:
+                for smpl in testSamples:
+                    print smpl, ': ', len(testSamples[smpl]), \
+                          np.mean([len(phSmpl) for phSmpl in testSamples[smpl]])
                 
             phAcc = phoneme_rec_accuracy_hmm(hmmDir, trSamples, testSamples)
 

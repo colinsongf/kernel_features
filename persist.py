@@ -14,10 +14,16 @@ class Preserver(object):
         pass
 
 class MongoPreserver(Preserver):
-    def persist(self, data):
+    def __init__(self, dbname="recres"):
+        """
+        set up the db information
+        """
+        self.dbname = dbname
+
+    def persist(self, data, collection="experiments"):
         client = MongoClient()
-        db = client["recres"]
-        experiments = db["experiments"]
+        db = client[self.dbname]
+        experiments = db[collection]
         try:
             experiments.insert(data)
         finally:
