@@ -4,6 +4,7 @@ import numpy as np
 import mlpy, pylab, random 
 import matplotlib.pyplot as plt
 import matplotlib.cm as cm
+import pandas as pd
 from scipy.linalg import eig, eigh
 from itertools import combinations
 
@@ -29,7 +30,11 @@ def centered_kernel_matrix(Kt, KSub):
                 
 
 def distance_prop(data, prop=np.mean):
-    return prop([np.linalg.norm(np.array(x) - np.array(y)) for x, y in combinations(data, 2)])
+    df = pd.DataFrame({'A': np.array([np.linalg.norm(np.array(x) - np.array(y))
+                                   for x, y in combinations(data, 2)])})
+    return df.mean()
+#    return prop([np.linalg.norm(np.array(x) - np.array(y)) for x, y in combinations(data, 2)])
+
 
 def one_of_c(clabs):
     labsInds = {l: ind for ind, l in enumerate(set(clabs))}
@@ -122,29 +127,36 @@ class kPLS(KernelMethod):
         return np.array(kTransTestData)
 
 class kOPLS(KernelMethod):
-    def estim_kbasis(self, trData, labels, regParam):
+    def estim_kbasis(self, trData, labels, regParam, verbose=True):
         self.trData = trData
         subSetInds = []
         while len(set(subSetInds)) < regParam: subSetInds.append(int(random.uniform(0, len(trData))))
         subSetInds = sorted(list(set(subSetInds)))
-
+        if verbose:
+            print "The sub set of indecies for reqularization has been selected"
 
         self.trDataSubset = np.array([trData[i] for i in subSetInds])
         
         Y = one_of_c(labels)
         Kx = np.mat([[self.kernel_func(np.array(xi), np.array(xj)) for xj in self.trData] for xi in self.trDataSubset])
         self.Kx = Kx
-        print self.Kx.shape
+        if verbose:
+            print "Requralized kernel matrix has been estimated!"
+            print "The shape of KxReg is", self.Kx.shape
         Kx = np.mat(mlpy.kernel_center(Kx, Kx))
 
         Ky = Y * Y.T
         Ky = np.mat(mlpy.kernel_center(Ky, Ky))
         meval = min(np.real(np.linalg.eigvals(Kx * Kx.T)))
-        KxKxT = Kx * Kx.T - 10 * meval * np.identity(Kx.shape[0])
-        print "KxKxT is simmetric:", np.allclose(KxKxT, (KxKxT).T)
+        KxKxT = Kx * Kx.T - 1e4 * meval * np.identity(Kx.shape[0])
+        if verbose:
+            print "Valitidy Check 1: KxKxT is simmetric:", \
+                  np.allclose(KxKxT, (KxKxT).T)
         def is_pos_def(x):
             return np.all(np.linalg.eigvals(x) > 0)
-        print "KxKxT is positive definite:", is_pos_def(KxKxT)
+        if verbose:
+            print "Validity Check 2: KxKxT is positive definite:", \
+                  is_pos_def(KxKxT)
 
 #        plt.imshow(Kx, cmap = cm.Greys_r)
 #        plt.show()

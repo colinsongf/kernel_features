@@ -2,23 +2,27 @@
 
 """
 
-./mainkernapp.py --applyphhmm recsystem/kOPLS/hmm/diag recsystem/mfcc/train/ recsystem/mfcc/test recsystem/train_labs
+example:
+./mainkernapp.py --applyphhmm recsystem/kOPLS/hmm/diag recsystem/mfcc/train/ recsystem/mfcc/test recsys/rodrech/mva rr_file_dict.json
 
 ./mainkernapp.py --custkmva
 
+--applyphhmm args: hmmDir, trDir, testDir[, labfn]
+
 """
 
-import sys, os
+import sys, os, json
 
 import numpy as np
 import numpy, pickle, mlpy, yaml, ghmm
 import matplotlib.pyplot as plt
 import matplotlib.cm as cm
 from persist import MongoPreserver
+from bson import ObjectId
 from functools import partial
 from kernelmethods import kPCA, kPLS, kOPLS, polynomial_closure, rbf_closure, KernelRbf, distance_prop
 from datagen import gen_train_data, gen_test_data, phoneme_dict, all_samples, \
-    get_kernel_data
+    get_kernel_data, CorpusFilesProfile, KernelProfile, wraped_exp_entry
 from vistools import plotGHMMEmiss
 from hmmroutines import init_hmm, HMMClassifier, HMMFromGHMMConverter, hmm_built_from, \
     HmmFromGHMMBuilder, HmmFromHTKBuilder, covmatr_type
@@ -190,63 +194,86 @@ def main():
     testData = gen_test_data()
 #    kernel_func = polynomial_closure(2)
 
-    print "median:", distance_prop(x, np.median)
-    sigma = 50.0
-    print "sigma:", sigma
+#    print "median:", distance_prop(x, np.median)
+    sigma = 40.0
     kernel_func = KernelRbf(sigma)
     kMVA = kOPLS(kernel_func)
     if args[0] == "--drawdata":
 #        kernel_func = partial(mlpy.kernel_gaussian, sigma=2.0)
         draw_data(x, y, kernel_func, testData)
-        draw_mlpy_example(x, y, testData)
+#        draw_mlpy_example(x, y, testData)
     elif args[0] == "--custkmva":
         draw_kmva_obj(x, y, kMVA, testData)
     elif args[0] == "--applyhmm":
         apply_hmm(x, y, kMVA)
     elif args[0] == "--applyphhmm":
-        if len(args) == 5 or len(args) == 4:
-            if len(args) == 5:
-                hmmDir, trDir, testDir, labfn = args[1:]
+        if len(args) == 6 or len(args) == 5:
+            verbose = True
+            corpus = "rodrech"
+            labFiles = ""
+            if len(args) == 6:
+                hmmDir, trDir, testDir, mvaDir, labFiles = args[1:]
             else:
-                hmmDir, trDir, testDir = args[1:]
-            phFileName = 'monophones_full.json'
-            trSamples = phoneme_dict(trDir, recSysDir, labsfn="", phsfn=phFileName)
+                hmmDir, trDir, testDir, mvaDir = args[1:]
+            phFileName = 'rr_phones_short.json'
+            trSamples = phoneme_dict(trDir, recSysDir,
+                                     labsfn=labFiles, phsfn=phFileName)
             if verbose:
+                print "Train:"
                 for smpl in trSamples:
                     print smpl, ': ', len(trSamples[smpl]), \
                           np.mean([len(phSmpl) for phSmpl in trSamples[smpl]])
-            testSamples = phoneme_dict(testDir, recSysDir, labsfn="", phsfn=phFileName)
+            testSamples = phoneme_dict(testDir, recSysDir,
+                                       labsfn=labFiles, phsfn=phFileName)
             if verbose:
+                print "Test:"
                 for smpl in testSamples:
                     print smpl, ': ', len(testSamples[smpl]), \
                           np.mean([len(phSmpl) for phSmpl in testSamples[smpl]])
-                
+
+            testType = os.path.basename(testDir)
+            with open(os.path.join(recSysDir, corpus, 
+                                   "mva", "kernelprof.pkl"), 'r') as f:
+                kernelProf = pickle.load(f)
+
+            mvafiles = [fn.split(".")[0] for fn in os.listdir(mvaDir)
+                        if fn.endswith(".mfc")]
+            mvaProf = CorpusFilesProfile(mvafiles)
+
             phAcc = phoneme_rec_accuracy_hmm(hmmDir, trSamples, testSamples)
-
+#            hmmFile = os.listdir(hmmDir)[0]
+#            covtype = covmatr_type(os.path.join(hmmDir, hmmFile))
             trLen = sum([len(trSamples[ph]) for ph in trSamples])
+            trainfiles = [fn.split(".")[0] for fn in os.listdir(trDir)
+                          if fn.endswith(".mfc")]
+            trProf = CorpusFilesProfile(trainfiles, trLen)
+
             testLen = sum([len(testSamples[ph]) for ph in testSamples])
-
-            recResEntry = {}
-            recResEntry['features'] = 'mfcc_kopls'
-            hmmFile = os.listdir(hmmDir)[0]
-            recResEntry['covtype'] = covmatr_type(os.path.join(hmmDir, hmmFile))
-            recResEntry['accuracy'] = phAcc
-            recResEntry['trainvol'] = trLen
-            recResEntry['testvol'] = testLen
-            recResEntry['dicts_total'] = 1
+            testfiles = [fn.split(".")[0] for fn in os.listdir(testDir)
+                         if fn.endswith(".mfc")]
+            testProf = CorpusFilesProfile(testfiles, testLen)
+                      
             f = open(os.path.join(recSysDir, phFileName))
-            monophones = yaml.load(f)
+            phones = json.load(f)
             f.close()
-            recResEntry['phonemes'] = monophones
-            recResEntry['median'], recResEntry['sigma'] = get_kernel_data()
+            dictorsTotal = 10
+            clId = ObjectId("5417e810c25c0e582698190a") # Simple HMM 3, 1, Diag
+            recResEntry = wraped_exp_entry(phAcc,
+                                           "mfcc_kopls", dictorsTotal, corpus,
+                                           trProf, testProf, mvaProf, testType,
+                                           clId, phones)
 
-            print recResEntry
+            if verbose:
+                for key in recResEntry:
+                    if not key.endswith('files'):
+                        print key, " --> ", recResEntry[key]
+
             saveToDB = False
             if saveToDB:
                 pres = MongoPreserver()
                 pres.persist(recResEntry)
         else:
-            print "--applyphhmm paramdbpath labdbpath"
+            print "--applyphhmm hmmDir trainDir testDir mvaDict [labs_dict_file]"
     else:
         print "Wrong command! Choose:\n", prompt
 
